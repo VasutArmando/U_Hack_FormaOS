@@ -1,0 +1,38 @@
+steps:
+  # Pas 1: Build imaginea Docker a backend-ului FastAPI
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/forma-os-backend:$COMMIT_SHA', './cloud_run']
+    id: 'build-backend'
+
+  # Pas 2: Push imaginea către Google Container Registry (sau Artifact Registry)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/forma-os-backend:$COMMIT_SHA']
+    id: 'push-backend'
+
+  # Pas 3: Deploy automatizat pe Google Cloud Run (Zero Downtime)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'forma-os-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/forma-os-backend:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west4'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '1'
+      - '--set-env-vars'
+      - 'DEMO_MODE=true'
+    id: 'deploy-run'
+
+images:
+  - 'gcr.io/$PROJECT_ID/forma-os-backend:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

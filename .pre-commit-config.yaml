@@ -1,0 +1,33 @@
+# =======================================================
+# FORMA OS - Pre-Commit Security Scanner Hooks
+# Previne scurgerea accidentală a cheilor de acces pe GitHub.
+# =======================================================
+
+repos:
+  # 1. DevSecOps: Detect Secrets (Împiedică hardcodarea cheilor AWS/GCP, token-urilor JWT, etc)
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package\.lock\.json|pubspec\.lock
+
+  # 2. TruffleHog (Scanner Secundar Avansat de la Yelp)
+  - repo: https://github.com/trufflesecurity/trufflehog
+    rev: v3.63.1
+    hooks:
+      - id: trufflehog
+        name: TruffleHog Secret Scanner
+        entry: bash -c 'trufflehog git file://. --since-commit HEAD --only-verified --fail'
+        language: system
+        stages: [commit, push]
+
+  # 3. Code Hygiene & Standard Hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files # Blochează commit-urile cu fișiere uriașe (Video Raw de zeci de GB)
+      - id: check-merge-conflict

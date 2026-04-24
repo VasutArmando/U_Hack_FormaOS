@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =========================================================
+    // ARHITECTURĂ B2B SAAS (MULTI-TENANT STRICT DATA ISOLATION)
+    // =========================================================
+    
+    // Block implicit pentru orice acces nespecificat
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Schema datelor izolează totul în sub-colecția clubului (ex: /tenants/u_cluj/...)
+    match /tenants/{clubId} {
+      
+      // 1. DATA ISOLATION: Verificăm dacă JWT Token-ul (Firebase Custom Claims)
+      // al utilizatorului conține 'club_id' EXACT la fel cu URL-ul cerut.
+      // E imposibil ca un analist de la CFR Cluj să interogheze API-ul pt tenant-ul 'u_cluj'.
+      function isTenantMember() {
+        return request.auth != null && request.auth.token.club_id == clubId;
+      }
+
+      // 2. ROLE-BASED ACCESS CONTROL (RBAC) în interiorul tenantului
+      function isCoach() {
+        return request.auth.token.COACH == true;
+      }
+      
+      function isMedicalStaff() {
+        return request.auth.token.MEDICAL == true;
+      }
+
+      // 3. DATELE TACTICE ȘI VIDEO (MECIURI)
+      match /matches/{matchId} {
+        // Orice analist video din interiorul clubului poate citi
+        allow read: if isTenantMember();
+        
+        // Numai Staff-ul Tehnic principal poate altera configurația meciului
+        allow write: if isTenantMember() && isCoach();
+        
+        // 4. TELEMETRIE EXTREM DE SENSIBILĂ (GPS 10Hz)
+        match /telemetry/{telemetryId} {
+           // Vizibil pe tableta UI
+           allow read: if isTenantMember();
+           // Scrierea aici e refuzată clientului. Ingestia se face exclusiv via
+           // Apache Beam / Cloud Dataflow de pe server folosind Service Accounts (care trec de Rules).
+           allow write: if false; 
+        }
+      }
+
+      // 5. DOCUMENTE MEDICALE CONFIDENȚIALE BIOMECANICE (PHI - Protected Health Info)
+      match /players/{playerId}/medical_records/{recordId} {
+        allow read, write: if isTenantMember() && (isMedicalStaff() || isCoach());
+      }
+    }
+  }
+}
