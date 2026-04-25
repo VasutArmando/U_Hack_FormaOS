@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
 import os
-import google.generativeai as genai
+import google.genai as genai
+from google.genai import types as genai_types
 
 # Import servicii noi de AI și Meteo
 from services.weather_engine import get_live_weather, process_weather_tactics, get_city_for_stadium
@@ -17,8 +18,7 @@ from services.stadium_vision_service import vision_pipeline
 from data_manager import db_provider
 
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
-if GOOGLE_API_KEY:
-    genai.configure(api_key=GOOGLE_API_KEY)
+_genai_client = genai.Client(api_key=GOOGLE_API_KEY) if GOOGLE_API_KEY else None
 
 logger = logging.getLogger("uvicorn")
 logger.setLevel(logging.INFO)
@@ -121,54 +121,52 @@ async def pregame_chronic_gaps(request: Request, opponent_id: Optional[str] = No
     return gaps
 
 @app.get("/api/v1/pregame/opponent-weakness")
-async def pregame_opponent_weakness(request: Request, opponent_id: Optional[str] = None, stadium_id: Optional[str] = None) -> Any:
+async def pregame_opponent_weakness(
+    request: Request,
+    opponent_id: Optional[str] = None,
+    stadium_id: Optional[str] = None,
+    game_date: Optional[str] = None,
+) -> Any:
     # Resolve team name for news search
     opponent_name = "Adversar"
     if opponent_id:
         team_list = db_provider.get_teams()
         opponent_name = next((t["name"] for t in team_list if t["id"] == opponent_id), "Adversar")
-    
-    # Resolve city for weather
-    city = "Cluj-Napoca"
-    if stadium_id:
-        stadiums = _load_json("stadiums.json")
-        stadium_list = stadiums if isinstance(stadiums, list) else stadiums.get("stadiums", [])
-        stadium_name = next((s["name"] for s in stadium_list if s["id"] == stadium_id), None)
-        if stadium_name:
-            city = get_city_for_stadium(stadium_name)
-    
-    weather_data = get_live_weather(city)
-    players = db_provider.get_opponent_weaknesses(opponent_id, opponent_name)
-    
-    # Preluăm tacticile generate de AI
-    cache_path = BASE_DATA_PATH / "current_weather_tactics.json"
-    if cache_path.exists():
-        try:
-            with open(cache_path, "r", encoding="utf-8") as f:
-                tactics = json.load(f)
-        except Exception:
-            tactics = process_weather_tactics(weather_data)
-    else:
-        tactics = process_weather_tactics(weather_data)
-        
-    is_raining = "rain" in weather_data.get("condition", "").lower()
-    
+
+    # Pass stadium_id + game_date to data manager — it will fetch forecast via lat/lng
+    players = db_provider.get_opponent_weaknesses(
+        opponent_id, opponent_name,
+        stadium_id=stadium_id,
+        game_date=game_date,
+    )
+
     for p in players:
-        try: 
+        try:
             p["overall_weakness_score"] = float(p.get("overall_weakness_score", 0))
-        except (ValueError, TypeError): 
+        except (ValueError, TypeError):
             pass
-        
-        # Weather contamination logic cerut explicit:
-        if is_raining:
-            # We check if the name contains common mock names or just apply a general warning
-            if "Popescu Andrei" in str(p.get("name", "")):
-                p["physical_state"] = str(p.get("physical_state", "")) + " Match conditions will severely affect his stability."
-            else:
-                # If it's a real player from hackathon, we still add the weather warning
-                p["physical_state"] = str(p.get("physical_state", "")) + " (Vulnerable to slippery pitch)."
-            
+
     return players
+
+
+@app.get("/api/v1/pregame/match-weather")
+async def pregame_match_weather(
+    request: Request,
+    stadium_id: Optional[str] = None,
+    game_date: Optional[str] = None,
+) -> Any:
+    """Returns the match-day weather forecast for the Settings screen preview."""
+    if not stadium_id:
+        from services.weather_engine import get_live_weather
+        return get_live_weather()
+    if game_date:
+        return db_provider.get_match_weather(stadium_id, game_date)
+    else:
+        from services.weather_engine import get_stadium_coords, get_live_weather
+        coords = get_stadium_coords(stadium_id)
+        lat, lng = coords.get('lat'), coords.get('lng')
+        return get_live_weather(lat=lat, lng=lng)
+
 
 # InGame
 @app.get("/api/v1/ingame/live-gaps")
@@ -255,7 +253,7 @@ async def ingame_assistant(request: Request, payload: AssistantRequest) -> Dict[
         # Nou: Adăugăm și scouting report-ul pregame (cine e veriga slabă)
         scouting_report = db_provider.get_opponent_weaknesses()
         
-        if not GOOGLE_API_KEY:
+        if not GOOGLE_API_KEY or not _genai_client:
             return {"advice": "Google API Key lipsește, nu pot folosi AI-ul pentru asistență completă. Analiza locală sugerează să vă concentrați pe contraatac."}
 
         # B. Construiește Master Prompt-ul
@@ -272,8 +270,10 @@ CONTEXT CURENT LIVE:
 Dacă întrebarea este legată de starea terenului/jucători obosiți, folosește datele meteo și biometrice. Dacă e legată de adversar, folosește știrile, scouting report-ul și găurile tactice. Oferă un sfat clar și acționabil."""
 
         # C. Generează răspunsul cu Gemini
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        response = model.generate_content(prompt)
+        response = _genai_client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
         advice = response.text.strip()
         
         return {"advice": advice}

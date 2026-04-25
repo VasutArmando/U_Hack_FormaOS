@@ -8,9 +8,9 @@ class ApiDataRepository implements DataRepository {
 
   ApiDataRepository({this.baseUrl = 'http://127.0.0.1:8000'});
 
-  Future<List<dynamic>> _fetchList(String endpoint) async {
+  Future<List<dynamic>> _fetchList(String endpoint, {Duration timeout = const Duration(seconds: 30)}) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl$endpoint'));
+      final response = await http.get(Uri.parse('$baseUrl$endpoint')).timeout(timeout);
       if (response.statusCode == 200) {
         return json.decode(response.body) as List<dynamic>;
       } else {
@@ -21,6 +21,18 @@ class ApiDataRepository implements DataRepository {
       print('Exception fetching data from $endpoint: $e');
       return [];
     }
+  }
+
+  Future<Map<String, dynamic>?> _fetchMap(String endpoint, {Duration timeout = const Duration(seconds: 10)}) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl$endpoint')).timeout(timeout);
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print('Exception fetching map from $endpoint: $e');
+    }
+    return null;
   }
 
   @override
@@ -44,15 +56,25 @@ class ApiDataRepository implements DataRepository {
   }
 
   @override
-  Future<List<PlayerWeakness>> getPregameOpponentWeakness({String? opponentId, String? stadiumId}) async {
+  Future<List<PlayerWeakness>> getPregameOpponentWeakness({String? opponentId, String? stadiumId, String? gameDate}) async {
     String url = '/api/v1/pregame/opponent-weakness';
     List<String> params = [];
     if (opponentId != null) params.add('opponent_id=$opponentId');
     if (stadiumId != null) params.add('stadium_id=$stadiumId');
+    if (gameDate != null) params.add('game_date=${Uri.encodeComponent(gameDate)}');
     if (params.isNotEmpty) url += '?${params.join('&')}';
     
-    final data = await _fetchList(url);
+    // First load requires Gemini to process the full squad (~2min); cached loads are <5s
+    final data = await _fetchList(url, timeout: const Duration(minutes: 5));
     return data.map((json) => PlayerWeakness.fromJson(json)).toList();
+  }
+
+  Future<MatchWeather?> getMatchWeather({required String stadiumId, String? gameDate}) async {
+    String url = '/api/v1/pregame/match-weather?stadium_id=$stadiumId';
+    if (gameDate != null) url += '&game_date=${Uri.encodeComponent(gameDate)}';
+    final data = await _fetchMap(url);
+    if (data == null) return null;
+    return MatchWeather.fromJson(data);
   }
 
   @override

@@ -9,7 +9,9 @@ from typing import List, Dict, Any
 
 
 from services.observer_pattern import Observer
-from services.news_engine import generate_pregame_intelligence
+from services.news_engine import generate_pregame_intelligence, generate_pregame_intelligence_v2
+from services.scraper import scrape_opponent_news
+from services.news_cache import get_or_fetch
 from services.stadium_vision_service import vision_pipeline
 
 logger = logging.getLogger("forma_os_data")
@@ -241,6 +243,8 @@ class LocalFilesProvider(DataProvider, Observer):
         self._matches_cache = None
         self._players_team_cache = None
         self._players_mapping_cache = None
+        self._players_role_cache = None
+        self._players_birth_cache = None
         self.data_dir = r"E:\U_Hack_FormaOS-1\Data_Fixed\Date - meciuri"
 
     def update(self, event_type: str, data: Any):
@@ -255,12 +259,19 @@ class LocalFilesProvider(DataProvider, Observer):
         clean = "".join([c for c in clean if c.isalnum() or c == ' ']).strip()
         return clean.replace(' ', '_')
 
+    @staticmethod
+    def _nfc(s: str) -> str:
+        """NFC-normalize a string so composed and decomposed Unicode chars compare equal."""
+        return unicodedata.normalize('NFC', s) if s else s
+
     def _parse_players_mapping(self):
         if self._players_mapping_cache is not None:
             return
             
         self._players_mapping_cache = {}
         self._players_team_cache = {}
+        self._players_role_cache = {}
+        self._players_birth_cache = {}
         players_file = os.path.join(self.data_dir, "players (1).json")
         try:
             if os.path.exists(players_file):
@@ -270,10 +281,15 @@ class LocalFilesProvider(DataProvider, Observer):
                         for p in data['players']:
                             pid = str(p.get('wyId', ''))
                             name = p.get('shortName') or f"{p.get('firstName', '')} {p.get('lastName', '')}".strip()
-                            teamname = p.get('teamname', 'Unknown')
+                            # NFC-normalize teamname to fix composed vs decomposed char mismatch
+                            teamname = self._nfc(p.get('teamname', 'Unknown'))
+                            role = p.get('role', {}).get('name', '') if isinstance(p.get('role'), dict) else ''
+                            birth_country = p.get('birthArea', {}).get('name', 'Unknown') if isinstance(p.get('birthArea'), dict) else 'Unknown'
                             if pid and name:
                                 self._players_mapping_cache[pid] = name
                                 self._players_team_cache[pid] = teamname
+                                self._players_role_cache[pid] = role
+                                self._players_birth_cache[pid] = birth_country
         except Exception as e:
             logger.error(f"Error parsing players mapping: {e}")
 
@@ -312,7 +328,9 @@ class LocalFilesProvider(DataProvider, Observer):
                 name_part = filename.split(',')[0]
                 teams_split = name_part.split(' - ')
                 if len(teams_split) == 2:
-                    team1, team2 = teams_split[0].strip(), teams_split[1].strip()
+                    # NFC-normalize to fix combining vs precomposed diacritic mismatch
+                    team1 = self._nfc(teams_split[0].strip())
+                    team2 = self._nfc(teams_split[1].strip())
                 else:
                     team1, team2 = "Unknown", "Unknown"
                     
@@ -384,24 +402,37 @@ class LocalFilesProvider(DataProvider, Observer):
     def get_chronic_gaps(self, opponent_id: str = None) -> List[Dict[str, Any]]:
         return self.fallback_db.get_chronic_gaps(opponent_id)
 
-    def get_opponent_weaknesses(self, opponent_id: str = None, opponent_name: str = "Adversar") -> List[Dict[str, Any]]:
+    def get_opponent_weaknesses(self, opponent_id: str = None, opponent_name: str = "Adversar",
+                                stadium_id: str = None, game_date: str = None) -> List[Dict[str, Any]]:
         self._parse_local_files()
         self._parse_players_mapping()
+        
+        # NFC-normalize opponent_name so it matches keys in matches_dict and _players_team_cache
+        opponent_name_nfc = self._nfc(opponent_name)
+        
+        # Fetch match-day weather (if stadium + date provided)
+        match_weather = None
+        if stadium_id and game_date:
+            match_weather = self.get_match_weather(stadium_id, game_date)
+            logger.info(f"Match weather for {game_date} @ {stadium_id}: {match_weather}")
         
         if opponent_id and self._matches_cache:
             opponent_matches = []
             for match_id, match_data in self._matches_cache.items():
-                if match_data.get('team1') == opponent_name or match_data.get('team2') == opponent_name:
+                if match_data.get('team1') == opponent_name_nfc or match_data.get('team2') == opponent_name_nfc:
                     opponent_matches.append(match_data)
+            
+            logger.info(f"Found {len(opponent_matches)} matches for opponent '{opponent_name_nfc}'")
             
             if opponent_matches:
                 player_stats_agg = {}
-                for match in opponent_matches[:5]: # Take last 5 matches to limit payload size
+                # Use ALL matches to capture the full squad, not just 5
+                for match in opponent_matches:
                     for p in match.get('players', []):
                         pid = str(p.get('playerId', ''))
                         
-                        # Filter out players from the other team using the new teamname mapping
-                        if self._players_team_cache.get(pid) != opponent_name:
+                        # Filter: only keep players from the opponent team
+                        if self._players_team_cache.get(pid) != opponent_name_nfc:
                             continue
                             
                         if pid not in player_stats_agg:
@@ -409,40 +440,82 @@ class LocalFilesProvider(DataProvider, Observer):
                             new_p['aggregated_minutes'] = 0
                             new_p['aggregated_duels'] = 0
                             new_p['aggregated_duels_won'] = 0
+                            new_p['aggregated_matches'] = 0
                             player_stats_agg[pid] = new_p
                         
                         totals = p.get('total', {})
                         player_stats_agg[pid]['aggregated_minutes'] += totals.get('minutesOnField', 0)
                         player_stats_agg[pid]['aggregated_duels'] += totals.get('duels', 0)
                         player_stats_agg[pid]['aggregated_duels_won'] += totals.get('duelsWon', 0)
+                        player_stats_agg[pid]['aggregated_matches'] += 1
                             
                 players_list = list(player_stats_agg.values())
-                # Filter players who actually played at least a match worth of minutes
-                players_list = [p for p in players_list if p.get('aggregated_minutes', 0) > 45]
-                
+                # Show ALL players who appeared in at least 1 match
+                players_list = [p for p in players_list if p.get('aggregated_matches', 0) >= 1]
+
                 def weakness_metric(p):
-                    minutes = p.get('aggregated_minutes', 1)
+                    minutes = max(p.get('aggregated_minutes', 1), 1)
                     duels = max(p.get('aggregated_duels', 1), 1)
                     duels_won = p.get('aggregated_duels_won', 0)
                     win_rate = duels_won / duels
-                    
-                    fatigue_factor = min(minutes / 450.0, 1.0)
+                    fatigue_factor = min(minutes / 900.0, 1.0)
                     performance_factor = 1.0 - win_rate
                     return fatigue_factor * 0.5 + performance_factor * 0.5
-                
+
                 players_list.sort(key=weakness_metric, reverse=True)
-                
-                # Get up to 6 worst performing key players to deep-dive search
-                selected_players = players_list[:6]
-                
-                for p in selected_players:
+
+                # Inject names, roles, and birth countries from players mapping
+                for p in players_list:
                     pid = str(p.get('playerId', ''))
-                    # Inject actual mapped name
                     p['name'] = self._players_mapping_cache.get(pid, f"Player {pid}")
-                    
-                return generate_pregame_intelligence(selected_players, opponent_name)
+                    p['player_role'] = self._players_role_cache.get(pid, '')
+                    p['birth_country'] = self._players_birth_cache.get(pid, 'Unknown')
+
+                # --- Scraping pipeline (Layer 1 + 2) ---
+                player_names = [
+                    p['name'] for p in players_list
+                    if p.get('name') and not p['name'].startswith('Player ')
+                ]
+                logger.info(
+                    f"Starting news scrape for '{opponent_name}' — "
+                    f"{len(players_list)} total players, "
+                    f"{len(player_names)} named."
+                )
+                scraped_news = get_or_fetch(
+                    opponent_name,
+                    scrape_opponent_news,
+                    opponent_name,
+                    player_names,
+                    game_date=game_date,
+                )
+                return generate_pregame_intelligence_v2(
+                    players_list, opponent_name, scraped_news,
+                    match_weather=match_weather,
+                )
                 
         return self.fallback_db.get_opponent_weaknesses(opponent_id, opponent_name)
+
+    def get_match_weather(self, stadium_id: str, game_date: str) -> dict:
+        """Fetch match-day forecast using stadium lat/lng + game date ISO string."""
+        from services.weather_engine import get_stadium_coords, get_forecast_for_match, get_live_weather
+        from datetime import datetime, timezone
+
+        coords = get_stadium_coords(stadium_id)
+        lat, lng = coords.get('lat'), coords.get('lng')
+
+        if lat is None or lng is None:
+            logger.warning(f"No coords for stadium {stadium_id}, using live weather fallback")
+            return get_live_weather()
+
+        try:
+            # Parse ISO date; support with or without timezone
+            dt = datetime.fromisoformat(game_date.replace('Z', '+00:00'))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return get_forecast_for_match(lat, lng, dt)
+        except Exception as e:
+            logger.warning(f"get_match_weather parse error: {e}")
+            return get_live_weather(lat=lat, lng=lng)
 
     def get_halftime_changes(self) -> List[Dict[str, Any]]:
         return self.fallback_db.get_halftime_changes()

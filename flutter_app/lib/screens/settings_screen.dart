@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../models/match_data.dart';
+import '../repositories/api_data_repository.dart';
 import '../repositories/data_repository.dart';
 import '../services/settings_service.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +27,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool _isLoading = true;
   bool _isSaving = false;
+  MatchWeather? _previewWeather;
+  bool _isLoadingWeather = false;
 
   @override
   void initState() {
@@ -92,6 +95,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text('Settings saved successfully!'),
         backgroundColor: Colors.green,
       ));
+    }
+
+    // Fetch weather preview for the chosen stadium + date
+    if (_selectedStadiumId != null) {
+      _fetchWeatherPreview();
+    }
+  }
+
+  Future<void> _fetchWeatherPreview() async {
+    setState(() => _isLoadingWeather = true);
+    try {
+      final apiRepo = getIt<DataRepository>() as ApiDataRepository?;
+      if (apiRepo == null) return;
+
+      String? gameDate;
+      if (_selectedDate != null) {
+        final hour = _selectedTime?.hour ?? 20;
+        final minute = _selectedTime?.minute ?? 45;
+        final dt = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day, hour, minute);
+        gameDate = dt.toIso8601String();
+      }
+
+      final weather = await apiRepo.getMatchWeather(
+        stadiumId: _selectedStadiumId!,
+        gameDate: gameDate,
+      );
+      if (mounted) setState(() => _previewWeather = weather);
+    } catch (e) {
+      // silently fail
+    } finally {
+      if (mounted) setState(() => _isLoadingWeather = false);
     }
   }
 
@@ -230,12 +264,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : const Text('SAVE SETTINGS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.2)),
                     ),
                   ),
+
+                  // Weather Preview
+                  if (_isLoadingWeather)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 24),
+                      child: Center(child: CircularProgressIndicator(color: Color(0xFF00FFCC), strokeWidth: 2)),
+                    )
+                  else if (_previewWeather != null)
+                    _buildWeatherPreview(_previewWeather!),
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildWeatherPreview(MatchWeather w) {
+    final isRain = w.condition.toLowerCase().contains('rain');
+    final isSnow = w.condition.toLowerCase().contains('snow');
+    final gradientColors = isSnow
+        ? [const Color(0xFF1565C0), const Color(0xFF0D47A1)]
+        : isRain
+            ? [const Color(0xFF283593), const Color(0xFF1A237E)]
+            : [const Color(0xFF2E7D32), const Color(0xFF1B5E20)];
+    return Container(
+      margin: const EdgeInsets.only(top: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(w.conditionIcon, style: const TextStyle(fontSize: 36)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${w.temperature.toStringAsFixed(1)}°C — ${w.condition}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                    if (w.forecastNote.isNotEmpty)
+                      Text(w.forecastNote,
+                          style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _weatherStat('💨', '${w.windSpeed.toStringAsFixed(0)} m/s', 'Vânt'),
+              _weatherStat('💧', '${w.humidity}%', 'Umiditate'),
+              _weatherStat('🌡️', '${w.temperature.toStringAsFixed(0)}°C', 'Temperatură'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _weatherStat(String emoji, String value, String label) {
+    return Column(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 20)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+      ],
     );
   }
 }

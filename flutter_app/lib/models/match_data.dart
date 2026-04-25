@@ -68,7 +68,10 @@ class PlayerWeakness {
   final String physicalState;
   final String psychologicalState;
   final String tacticalTendencies;
+  final String? exploitRecommendation;
   final double overallWeaknessScore;
+  final String climateDanger;   // "High", "Medium", "Low", "None"
+  final String birthCountry;
 
   PlayerWeakness({
     required this.id,
@@ -76,7 +79,10 @@ class PlayerWeakness {
     required this.physicalState,
     required this.psychologicalState,
     required this.tacticalTendencies,
+    this.exploitRecommendation,
     required this.overallWeaknessScore,
+    this.climateDanger = 'None',
+    this.birthCountry = '',
   });
 
   factory PlayerWeakness.fromJson(Map<String, dynamic> json) {
@@ -86,8 +92,47 @@ class PlayerWeakness {
       physicalState: json['physical_state'] ?? '',
       psychologicalState: json['psychological_state'] ?? '',
       tacticalTendencies: json['tactical_tendencies'] ?? '',
+      exploitRecommendation: json['exploit_recommendation'],
       overallWeaknessScore: (json['overall_weakness_score'] ?? json['weakness_score'] ?? 0).toDouble(),
+      climateDanger: json['climate_danger'] ?? 'None',
+      birthCountry: json['birth_country'] ?? '',
     );
+  }
+}
+
+class MatchWeather {
+  final double temperature;
+  final String condition;
+  final int humidity;
+  final double windSpeed;
+  final String forecastNote;
+
+  MatchWeather({
+    required this.temperature,
+    required this.condition,
+    required this.humidity,
+    required this.windSpeed,
+    this.forecastNote = '',
+  });
+
+  factory MatchWeather.fromJson(Map<String, dynamic> json) {
+    return MatchWeather(
+      temperature: (json['temperature'] ?? 15.0).toDouble(),
+      condition: json['condition'] ?? 'Clear',
+      humidity: (json['humidity'] ?? 50).toInt(),
+      windSpeed: (json['wind_speed'] ?? 0.0).toDouble(),
+      forecastNote: json['forecast_note'] ?? '',
+    );
+  }
+
+  String get conditionIcon {
+    final c = condition.toLowerCase();
+    if (c.contains('rain') || c.contains('drizzle')) return '🌧️';
+    if (c.contains('snow')) return '❄️';
+    if (c.contains('thunder') || c.contains('storm')) return '⛈️';
+    if (c.contains('cloud')) return '☁️';
+    if (c.contains('fog') || c.contains('mist')) return '🌫️';
+    return '☀️';
   }
 }
 

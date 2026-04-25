@@ -1,15 +1,119 @@
 [
-  {"id": "s1", "name": "Arena Nationala"},
-  {"id": "s2", "name": "Stadionul Dr. Constantin Radulescu"},
-  {"id": "s3", "name": "Stadionul Ion Oblemenco"},
-  {"id": "s4", "name": "Stadionul Viitorul (Academia Hagi)"},
-  {"id": "s5", "name": "Superbet Arena - Giulesti"},
-  {"id": "s6", "name": "Sepsi Arena"},
-  {"id": "s7", "name": "Cluj Arena"},
-  {"id": "s8", "name": "Stadionul Ilie Oana"},
-  {"id": "s9", "name": "Stadionul Municipal (Sibiu)"},
-  {"id": "s10", "name": "Stadionul Francisc von Neuman"},
-  {"id": "s11", "name": "Stadionul Arcul de Triumf"},
-  {"id": "s12", "name": "Stadionul Emil Alexandrescu"},
-  {"id": "s13", "name": "Stadionul Otelul"}
+  {
+    "id": "s1",
+    "name": "Arena Națională",
+    "city": "București",
+    "county": "București",
+    "country": "România",
+    "lat": 44.4372,
+    "lng": 26.1525
+  },
+  {
+    "id": "s2",
+    "name": "Stadionul Dr. Constantin Rădulescu",
+    "city": "Cluj-Napoca",
+    "county": "Cluj",
+    "country": "România",
+    "lat": 46.7794,
+    "lng": 23.5775
+  },
+  {
+    "id": "s3",
+    "name": "Stadionul Ion Oblemenco",
+    "city": "Craiova",
+    "county": "Dolj",
+    "country": "România",
+    "lat": 44.3139,
+    "lng": 23.7842
+  },
+  {
+    "id": "s4",
+    "name": "Stadionul Viitorul (Academia Hagi)",
+    "city": "Ovidiu",
+    "county": "Constanța",
+    "country": "România",
+    "lat": 44.2361,
+    "lng": 28.5656
+  },
+  {
+    "id": "s5",
+    "name": "Superbet Arena - Giulești",
+    "city": "București",
+    "county": "București",
+    "country": "România",
+    "lat": 44.4559,
+    "lng": 26.0569
+  },
+  {
+    "id": "s6",
+    "name": "Sepsi Arena",
+    "city": "Sfântu Gheorghe",
+    "county": "Covasna",
+    "country": "România",
+    "lat": 45.8836,
+    "lng": 25.8063
+  },
+  {
+    "id": "s7",
+    "name": "Cluj Arena",
+    "city": "Cluj-Napoca",
+    "county": "Cluj",
+    "country": "România",
+    "lat": 46.7683,
+    "lng": 23.5722
+  },
+  {
+    "id": "s8",
+    "name": "Stadionul Ilie Oană",
+    "city": "Ploiești",
+    "county": "Prahova",
+    "country": "România",
+    "lat": 44.9406,
+    "lng": 26.0345
+  },
+  {
+    "id": "s9",
+    "name": "Stadionul Municipal (Sibiu)",
+    "city": "Sibiu",
+    "county": "Sibiu",
+    "country": "România",
+    "lat": 45.7833,
+    "lng": 24.1438
+  },
+  {
+    "id": "s10",
+    "name": "Stadionul Francisc von Neuman",
+    "city": "Arad",
+    "county": "Arad",
+    "country": "România",
+    "lat": 46.1925,
+    "lng": 21.3119
+  },
+  {
+    "id": "s11",
+    "name": "Stadionul Arcul de Triumf",
+    "city": "București",
+    "county": "București",
+    "country": "România",
+    "lat": 44.4691,
+    "lng": 26.0749
+  },
+  {
+    "id": "s12",
+    "name": "Stadionul Emil Alexandrescu",
+    "city": "Iași",
+    "county": "Iași",
+    "country": "România",
+    "lat": 47.1844,
+    "lng": 27.5611
+  },
+  {
+    "id": "s13",
+    "name": "Stadionul Oțelul",
+    "city": "Galați",
+    "county": "Galați",
+    "country": "România",
+    "lat": 45.4303,
+    "lng": 28.0225
+  }
 ]
