@@ -1,0 +1,9 @@
+[
+  {
+    "id": "gap_half_1",
+    "location": "Central Channel",
+    "description": "Opponent's defensive line is extremely deep, but their midfield is tired. The space between their lines (Zone 14) is expanding.",
+    "severity": "Critical",
+    "coordinates": {"x": 50, "y": 0, "w": 60, "h": 50}
+  }
+]

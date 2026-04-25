@@ -1,0 +1,16 @@
+[
+  {
+    "id": "gap_pre_1",
+    "location": "Left Flank / Half Space",
+    "description": "Opponent's left back tends to invert, leaving the wide channel open during transition.",
+    "severity": "High",
+    "coordinates": {"x": -80, "y": -40, "w": 60, "h": 100}
+  },
+  {
+    "id": "gap_pre_2",
+    "location": "Zone 14 (Central Edge of Box)",
+    "description": "DM pushes up too early during buildup, creating a gap between midfield and defense.",
+    "severity": "Medium",
+    "coordinates": {"x": 60, "y": 0, "w": 40, "h": 60}
+  }
+]

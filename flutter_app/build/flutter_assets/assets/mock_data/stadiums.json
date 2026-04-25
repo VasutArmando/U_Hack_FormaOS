@@ -1,0 +1,15 @@
+[
+  {"id": "s1", "name": "Arena Nationala"},
+  {"id": "s2", "name": "Stadionul Dr. Constantin Radulescu"},
+  {"id": "s3", "name": "Stadionul Ion Oblemenco"},
+  {"id": "s4", "name": "Stadionul Viitorul (Academia Hagi)"},
+  {"id": "s5", "name": "Superbet Arena - Giulesti"},
+  {"id": "s6", "name": "Sepsi Arena"},
+  {"id": "s7", "name": "Cluj Arena"},
+  {"id": "s8", "name": "Stadionul Ilie Oana"},
+  {"id": "s9", "name": "Stadionul Municipal (Sibiu)"},
+  {"id": "s10", "name": "Stadionul Francisc von Neuman"},
+  {"id": "s11", "name": "Stadionul Arcul de Triumf"},
+  {"id": "s12", "name": "Stadionul Emil Alexandrescu"},
+  {"id": "s13", "name": "Stadionul Otelul"}
+]

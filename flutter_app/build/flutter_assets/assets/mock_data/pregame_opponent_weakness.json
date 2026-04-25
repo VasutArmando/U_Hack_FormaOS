@@ -1,0 +1,30 @@
+[
+  {
+    "id": "p1",
+    "name": "Popescu Andrei (CM)",
+    "physical_state": "Slight hamstring tightness reported in training. Struggles on wet pitches.",
+    "psychological_state": "Low morale due to contract dispute (Sentiment: -15%).",
+    "overall_weakness_score": 75
+  },
+  {
+    "id": "p2",
+    "name": "Ionescu Marian (RB)",
+    "physical_state": "Recovering from ankle sprain. Agility is limited.",
+    "psychological_state": "High stress from media criticism (Sentiment: -25%).",
+    "overall_weakness_score": 85
+  },
+  {
+    "id": "p3",
+    "name": "Stoica Vasile (CB)",
+    "physical_state": "Fully fit, but physically slow against fast attackers.",
+    "psychological_state": "Confident.",
+    "overall_weakness_score": 40
+  },
+  {
+    "id": "p4",
+    "name": "Dieng Oumar (RW)",
+    "physical_state": "Not acclimated to extreme cold. Historical data shows a 15% drop in sprint volume at sub-zero temperatures.",
+    "psychological_state": "Visibly frustrated during warmups in similar conditions. Motivation drops in severe weather.",
+    "overall_weakness_score": 90
+  }
+]

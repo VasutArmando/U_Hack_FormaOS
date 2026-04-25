@@ -23,6 +23,8 @@ dependencies:
   speech_to_text: ^6.5.0
   flutter_tts: ^3.8.3
   provider: ^6.1.5+1
+  shared_preferences: ^2.5.5
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -33,3 +35,6 @@ flutter:
 
   shaders:
     - shaders/voronoi.frag
+
+  assets:
+    - assets/mock_data/

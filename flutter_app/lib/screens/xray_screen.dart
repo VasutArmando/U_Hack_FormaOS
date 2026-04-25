@@ -19,7 +19,8 @@ class _XrayScreenState extends State<XrayScreen> {
   }
 
   Future<List<dynamic>> _fetchThreatData() async {
-    final response = await http.get(Uri.parse('http://127.0.0.1:8000/api/xray/threat-map'));
+    final response =
+        await http.get(Uri.parse('http://127.0.0.1:8000/api/xray/threat-map'));
     if (response.statusCode == 200) {
       final jsonResponse = json.decode(response.body);
       return jsonResponse['vulnerability_zones'] as List<dynamic>;
@@ -45,12 +46,19 @@ class _XrayScreenState extends State<XrayScreen> {
                 children: const [
                   Text(
                     "X-RAY: VULNERABILITY MAP",
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.2),
+                    style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 1.2),
                   ),
                   SizedBox(height: 4),
                   Text(
                     "Identificarea Spațiilor Libere (Expected Threat)",
-                    style: TextStyle(fontSize: 14, color: Colors.white54, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white54,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -66,7 +74,8 @@ class _XrayScreenState extends State<XrayScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent.withOpacity(0.2),
                   foregroundColor: Colors.redAccent,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
             ],
@@ -77,12 +86,16 @@ class _XrayScreenState extends State<XrayScreen> {
               future: _threatData,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.redAccent));
+                  return const Center(
+                      child:
+                          CircularProgressIndicator(color: Colors.redAccent));
                 } else if (snapshot.hasError) {
                   return Center(
-                    child: Text('Conexiune AI eșuată: \${snapshot.error}', 
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold)
-                    ),
+                    child: Text('Conexiune AI eșuată: \${snapshot.error}',
+                        style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
                   );
                 } else if (snapshot.hasData) {
                   final zones = snapshot.data!;
@@ -92,7 +105,10 @@ class _XrayScreenState extends State<XrayScreen> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.white10),
                       boxShadow: const [
-                        BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10)),
+                        BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 20,
+                            offset: Offset(0, 10)),
                       ],
                     ),
                     child: ClipRRect(
@@ -102,7 +118,8 @@ class _XrayScreenState extends State<XrayScreen> {
                         child: LayoutBuilder(
                           builder: (context, constraints) {
                             return CustomPaint(
-                              size: Size(constraints.maxWidth, constraints.maxHeight),
+                              size: Size(
+                                  constraints.maxWidth, constraints.maxHeight),
                               painter: XRayPainter(zones: zones),
                             );
                           },
@@ -111,7 +128,9 @@ class _XrayScreenState extends State<XrayScreen> {
                     ),
                   );
                 } else {
-                  return const Center(child: Text("Nu s-au detectat vulnerabilități.", style: TextStyle(color: Colors.white)));
+                  return const Center(
+                      child: Text("Nu s-au detectat vulnerabilități.",
+                          style: TextStyle(color: Colors.white)));
                 }
               },
             ),
@@ -138,13 +157,21 @@ class XRayPainter extends CustomPainter {
     // Contur Teren
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), pitchPaint);
     // Linia de Mijloc
-    canvas.drawLine(Offset(size.width / 2, 0), Offset(size.width / 2, size.height), pitchPaint);
+    canvas.drawLine(Offset(size.width / 2, 0),
+        Offset(size.width / 2, size.height), pitchPaint);
     // Cercul de la Mijloc
-    canvas.drawCircle(Offset(size.width / 2, size.height / 2), size.height * 0.15, pitchPaint);
+    canvas.drawCircle(Offset(size.width / 2, size.height / 2),
+        size.height * 0.15, pitchPaint);
     // Careul de 16m (Stânga - Apărarea adversă)
-    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.2, size.width * 0.18, size.height * 0.6), pitchPaint);
+    canvas.drawRect(
+        Rect.fromLTWH(
+            0, size.height * 0.2, size.width * 0.18, size.height * 0.6),
+        pitchPaint);
     // Careul de 16m (Dreapta - Apărarea noastră)
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.82, size.height * 0.2, size.width * 0.18, size.height * 0.6), pitchPaint);
+    canvas.drawRect(
+        Rect.fromLTWH(size.width * 0.82, size.height * 0.2, size.width * 0.18,
+            size.height * 0.6),
+        pitchPaint);
 
     // 2. DESENARE VULNERABILITY ZONES (Gradient Map)
     const double gridWidth = 100.0;
@@ -159,7 +186,8 @@ class XRayPainter extends CustomPainter {
       // Conversie în coordonate pixel
       final cx = (x / gridWidth) * size.width;
       final cy = (y / gridHeight) * size.height;
-      final radius = (radiusData / 100.0) * size.width; // Transformare bazată pe grid-ul procentual
+      final radius = (radiusData / 100.0) *
+          size.width; // Transformare bazată pe grid-ul procentual
 
       // Logica de culori (Neon Danger vs Safe)
       Color centerColor;
@@ -182,7 +210,8 @@ class XRayPainter extends CustomPainter {
       );
 
       final paint = Paint()
-        ..shader = gradient.createShader(Rect.fromCircle(center: Offset(cx, cy), radius: radius));
+        ..shader = gradient.createShader(
+            Rect.fromCircle(center: Offset(cx, cy), radius: radius));
 
       canvas.drawCircle(Offset(cx, cy), radius, paint);
 
@@ -191,7 +220,7 @@ class XRayPainter extends CustomPainter {
         ..color = Colors.white.withOpacity(0.9)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(cx, cy), 3.0, centerDot);
-      
+
       // Scor text deasupra epicentrului (pentru extra precizie)
       final textSpan = TextSpan(
         text: threat.toStringAsFixed(2),

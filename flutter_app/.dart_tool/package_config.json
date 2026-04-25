@@ -110,6 +110,12 @@
       "languageVersion": "3.7"
     },
     {
+      "name": "file",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/file-7.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
       "name": "firebase_auth",
       "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth-4.20.0",
       "packageUri": "lib/",
@@ -236,6 +242,12 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "intl",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/intl-0.20.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
       "name": "js",
       "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/js-0.7.2",
       "packageUri": "lib/",
@@ -302,6 +314,24 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "path_provider_linux",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_linux-2.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.19"
+    },
+    {
+      "name": "path_provider_platform_interface",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_platform_interface-2.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "path_provider_windows",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_windows-2.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
       "name": "pedantic",
       "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/pedantic-1.11.1",
       "packageUri": "lib/",
@@ -314,6 +344,12 @@
       "languageVersion": "3.8"
     },
     {
+      "name": "platform",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/platform-3.1.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
       "name": "plugin_platform_interface",
       "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/plugin_platform_interface-2.1.8",
       "packageUri": "lib/",
@@ -324,6 +360,48 @@
       "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/provider-6.1.5+1",
       "packageUri": "lib/",
       "languageVersion": "2.12"
+    },
+    {
+      "name": "shared_preferences",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences-2.5.5",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "shared_preferences_android",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_android-2.4.23",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "shared_preferences_foundation",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_foundation-2.5.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "shared_preferences_linux",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_linux-2.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "shared_preferences_platform_interface",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_platform_interface-2.4.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "shared_preferences_web",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_web-2.4.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "shared_preferences_windows",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_windows-2.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
     },
     {
       "name": "sky_engine",
@@ -412,6 +490,12 @@
     {
       "name": "web_socket_channel",
       "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/web_socket_channel-2.4.5",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "xdg_directories",
+      "rootUri": "file:///C:/Users/tudor/AppData/Local/Pub/Cache/hosted/pub.dev/xdg_directories-1.1.0",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },

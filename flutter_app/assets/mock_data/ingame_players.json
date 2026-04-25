@@ -1,0 +1,20 @@
+[
+  {
+    "id": "p2",
+    "name": "Ionescu Marian (RB)",
+    "fatigue": 88,
+    "live_remark": "Sprint speed dropped by 22% in the last 10 minutes. Highly vulnerable."
+  },
+  {
+    "id": "p1",
+    "name": "Popescu Andrei (CM)",
+    "fatigue": 70,
+    "live_remark": "Struggling with the wet pitch. Slipping frequently."
+  },
+  {
+    "id": "p4",
+    "name": "Radu Alexandru (LW)",
+    "fatigue": 45,
+    "live_remark": "Still energetic, but isolated from the team."
+  }
+]

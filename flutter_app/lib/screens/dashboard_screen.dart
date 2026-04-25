@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'oracle_screen.dart';
-import 'xray_screen.dart';
+import 'pregame_screen.dart';
+import 'ingame_screen.dart';
+import 'halftime_screen.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -12,31 +14,19 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  // Destinațiile (ecranele placeholder temporare)
-  final List<Widget> _views = const [
-    Center(
-      child: Text('📊 Overview (Sumarul adversarului)', 
-        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white70)
-      )
-    ),
-    const OracleScreen(),
-    const XrayScreen(), // Înlocuit Placeholder-ul X-RAY
-    Center(
-      child: Text('🧠 TACTICIAN (Master Game Plan)', 
-        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white70)
-      )
-    ),
+  final List<Widget> _screens = [
+    const PregameScreen(),
+    const InGameScreen(),
+    const HalftimeScreen(),
+    const SettingsScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    // Extindem automat NavigationRail pe rezoluții mari (Desktop/Tabletă Landscape)
-    final bool isDesktop = MediaQuery.of(context).size.width >= 800;
-
     return Scaffold(
       body: Row(
         children: [
-          // Meniul lateral standard pentru interfețe B2B/Dashboard
+          // Sidebar de navigare (NavigationRail)
           NavigationRail(
             selectedIndex: _selectedIndex,
             onDestinationSelected: (int index) {
@@ -44,53 +34,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _selectedIndex = index;
               });
             },
-            extended: isDesktop,
-            minExtendedWidth: 220,
+            labelType: NavigationRailLabelType.all,
+            backgroundColor: Theme.of(context).navigationRailTheme.backgroundColor,
+            selectedIconTheme: Theme.of(context).navigationRailTheme.selectedIconTheme,
+            unselectedIconTheme: Theme.of(context).navigationRailTheme.unselectedIconTheme,
+            selectedLabelTextStyle: Theme.of(context).navigationRailTheme.selectedLabelTextStyle,
+            unselectedLabelTextStyle: Theme.of(context).navigationRailTheme.unselectedLabelTextStyle,
             leading: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24.0),
-              child: isDesktop 
-                  ? Column(
-                      children: const [
-                        Icon(Icons.sports_soccer, size: 40, color: Color(0xFF00FFCC)),
-                        SizedBox(height: 8),
-                        Text('FORMA SCOUT', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2.0, fontSize: 16)),
-                      ],
-                    )
-                  : const Icon(Icons.sports_soccer, size: 36, color: Color(0xFF00FFCC)),
+              padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
+              child: Column(
+                children: [
+                  const Icon(Icons.sports_soccer, size: 40, color: Color(0xFF00FFCC)),
+                  const SizedBox(height: 8),
+                  const Text('FormaOS', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 14, color: Colors.white)),
+                ],
+              ),
             ),
             destinations: const [
               NavigationRailDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard),
-                label: Text('Overview'),
+                icon: Icon(Icons.schedule),
+                selectedIcon: Icon(Icons.schedule, color: Color(0xFF00FFCC)),
+                label: Text('Pregame'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.hub_outlined),
-                selectedIcon: Icon(Icons.hub),
-                label: Text('ORACLE'),
+                icon: Icon(Icons.play_circle_outline),
+                selectedIcon: Icon(Icons.play_circle_filled, color: Color(0xFF00FFCC)),
+                label: Text('InGame'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.radar_outlined),
-                selectedIcon: Icon(Icons.radar),
-                label: Text('X-RAY'),
+                icon: Icon(Icons.pause_circle_outline),
+                selectedIcon: Icon(Icons.pause_circle_filled, color: Color(0xFF00FFCC)),
+                label: Text('HalfTime'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.psychology_outlined),
-                selectedIcon: Icon(Icons.psychology),
-                label: Text('TACTICIAN'),
+                icon: Icon(Icons.settings),
+                selectedIcon: Icon(Icons.settings, color: Color(0xFF00FFCC)),
+                label: Text('Settings'),
               ),
             ],
           ),
-          
-          // Separator fin între meniu și corpul aplicației
           const VerticalDivider(thickness: 1, width: 1, color: Colors.white10),
-          
-          // Zona principală (Dinamică în funcție de selecție)
+          // Conținutul principal (partea dreaptă)
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: _views[_selectedIndex],
-            ),
+            child: _screens[_selectedIndex],
           ),
         ],
       ),
