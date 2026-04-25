@@ -46,12 +46,32 @@ def generate_pregame_intelligence(db_data: List[Dict[str, Any]], opponent_name: 
             p["overall_weakness_score"] = float(p.get("weakness_score", 0))
         return db_data
 
-    prompt = f"""Ești Principal AI Architect la U Cluj. Ai datele biometrice pregame {json.dumps(db_data)} și știrile recente: {json.dumps(news_titles)}.
-Identifică 'veriga slabă' din echipa adversă pe baza moralului și a accidentărilor. Mărește 'overall_weakness_score' pentru jucătorul cel mai afectat emoțional sau fizic din știri.
-Returnează o listă pură JSON de jucători, fiecare cu câmpurile: id, name, physical_state, psychological_state, overall_weakness_score."""
+    prompt = f"""Ești Principal AI Architect la echipa de fotbal U Cluj. 
+Ai primit DATELE BRUTE de performanță (match stats) pentru jucătorii adversarului {opponent_name}:
+{json.dumps(db_data)}
+
+Și știrile recente:
+{json.dumps(news_titles)}
+
+SARCINĂ:
+1. Analizează statisticile brute (ex: total_minutes ridicat = oboseală, duels_won scăzut = verigă slabă în apărare).
+2. Integrează știrile (accidentări, moral).
+3. Generează o analiză tactică în ROMÂNĂ pentru fiecare jucător.
+4. Calculează 'overall_weakness_score' (0-100).
+
+Returnează un obiect JSON pur (listă) cu formatul exact:
+[
+  {{
+    "id": "player_id",
+    "name": "Nume Jucător (ID)",
+    "physical_state": "Analiză stare fizică în română bazată pe minute și știri",
+    "psychological_state": "Analiză stare mentală în română bazată pe moral și știri",
+    "overall_weakness_score": numeric_value
+  }}
+]"""
     
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash") # Use 1.5 Flash
         response = model.generate_content(prompt)
         text = response.text.strip()
         

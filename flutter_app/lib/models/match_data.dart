@@ -67,7 +67,7 @@ class PlayerWeakness {
   final String name;
   final String physicalState;
   final String psychologicalState;
-  final int overallWeaknessScore;
+  final double overallWeaknessScore;
 
   PlayerWeakness({
     required this.id,
@@ -79,11 +79,11 @@ class PlayerWeakness {
 
   factory PlayerWeakness.fromJson(Map<String, dynamic> json) {
     return PlayerWeakness(
-      id: json['id'],
-      name: json['name'],
-      physicalState: json['physical_state'],
-      psychologicalState: json['psychological_state'],
-      overallWeaknessScore: json['overall_weakness_score'],
+      id: (json['id'] ?? json['player_id'] ?? '').toString(),
+      name: json['name'] ?? 'Unknown',
+      physicalState: json['physical_state'] ?? '',
+      psychologicalState: json['psychological_state'] ?? '',
+      overallWeaknessScore: (json['overall_weakness_score'] ?? json['weakness_score'] ?? 0).toDouble(),
     );
   }
 }
@@ -91,7 +91,7 @@ class PlayerWeakness {
 class LivePlayerFatigue {
   final String id;
   final String name;
-  final int fatigue;
+  final double fatigue;
   final String liveRemark;
 
   LivePlayerFatigue({
@@ -103,10 +103,10 @@ class LivePlayerFatigue {
 
   factory LivePlayerFatigue.fromJson(Map<String, dynamic> json) {
     return LivePlayerFatigue(
-      id: json['id'],
-      name: json['name'],
-      fatigue: json['fatigue'],
-      liveRemark: json['live_remark'],
+      id: (json['id'] ?? '').toString(),
+      name: json['name'] ?? 'Unknown',
+      fatigue: (json['fatigue'] ?? 0).toDouble(),
+      liveRemark: json['live_remark'] ?? '',
     );
   }
 }
@@ -115,7 +115,7 @@ class HalftimeChange {
   final String id;
   final String title;
   final String description;
-  final int likelihood;
+  final double likelihood;
   final String category;
 
   HalftimeChange({
@@ -128,11 +128,11 @@ class HalftimeChange {
 
   factory HalftimeChange.fromJson(Map<String, dynamic> json) {
     return HalftimeChange(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      likelihood: json['likelihood'],
-      category: json['category'],
+      id: (json['id'] ?? '').toString(),
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      likelihood: (json['likelihood'] ?? 0).toDouble(),
+      category: json['category'] ?? '',
     );
   }
 }

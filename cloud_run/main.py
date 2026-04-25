@@ -7,11 +7,18 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
+import os
+import google.generativeai as genai
 
 # Import servicii noi de AI și Meteo
 from services.weather_engine import get_live_weather, process_weather_tactics, get_city_for_stadium
+from services.news_engine import fetch_opponent_news
 from services.stadium_vision_service import vision_pipeline
 from data_manager import db_provider
+
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+if GOOGLE_API_KEY:
+    genai.configure(api_key=GOOGLE_API_KEY)
 
 logger = logging.getLogger("uvicorn")
 logger.setLevel(logging.INFO)
@@ -90,8 +97,8 @@ async def get_stadiums(request: Request) -> Any:
 
 # Pregame
 @app.get("/api/v1/pregame/chronic-gaps")
-async def pregame_chronic_gaps(request: Request) -> Any:
-    gaps = db_provider.get_chronic_gaps()
+async def pregame_chronic_gaps(request: Request, opponent_id: Optional[str] = None) -> Any:
+    gaps = db_provider.get_chronic_gaps(opponent_id)
     
     # Format requirements: Toate coordonatele tactice pentru 'Chronic Gaps' (M4) trebuie returnate ca obiecte de tip Rect (x, y, w, h) compatibile cu sistemul de desenare din Flutter.
     for gap in gaps:
@@ -110,9 +117,25 @@ async def pregame_chronic_gaps(request: Request) -> Any:
     return gaps
 
 @app.get("/api/v1/pregame/opponent-weakness")
-async def pregame_opponent_weakness(request: Request) -> Any:
-    weather_data = _get_live_weather_data()
-    players = db_provider.get_opponent_weaknesses()
+async def pregame_opponent_weakness(request: Request, opponent_id: Optional[str] = None, stadium_id: Optional[str] = None) -> Any:
+    # Resolve team name for news search
+    opponent_name = "Adversar"
+    if opponent_id:
+        teams = _load_json("teams.json")
+        team_list = teams if isinstance(teams, list) else teams.get("teams", [])
+        opponent_name = next((t["name"] for t in team_list if t["id"] == opponent_id), "Adversar")
+    
+    # Resolve city for weather
+    city = "Cluj-Napoca"
+    if stadium_id:
+        stadiums = _load_json("stadiums.json")
+        stadium_list = stadiums if isinstance(stadiums, list) else stadiums.get("stadiums", [])
+        stadium_name = next((s["name"] for s in stadium_list if s["id"] == stadium_id), None)
+        if stadium_name:
+            city = get_city_for_stadium(stadium_name)
+    
+    weather_data = get_live_weather(city)
+    players = db_provider.get_opponent_weaknesses(opponent_id, opponent_name)
     
     # Preluăm tacticile generate de AI
     cache_path = BASE_DATA_PATH / "current_weather_tactics.json"
@@ -135,10 +158,12 @@ async def pregame_opponent_weakness(request: Request) -> Any:
         
         # Weather contamination logic cerut explicit:
         if is_raining:
+            # We check if the name contains common mock names or just apply a general warning
             if "Popescu Andrei" in str(p.get("name", "")):
                 p["physical_state"] = str(p.get("physical_state", "")) + " Match conditions will severely affect his stability."
-            
-            # Putem pune tactical suggestion global într-un state psihologic / descriere dacă vrem
+            else:
+                # If it's a real player from hackathon, we still add the weather warning
+                p["physical_state"] = str(p.get("physical_state", "")) + " (Vulnerable to slippery pitch)."
             
     return players
 
@@ -217,51 +242,42 @@ class AssistantRequest(BaseModel):
 async def ingame_assistant(request: Request, payload: AssistantRequest) -> Dict[str, Any]:
     query = payload.query.lower()
     
-    # A. Interogări despre Jucători (Oboseală/Status)
-    if any(k in query for k in ["oboseală", "oboseala", "obosit", "jucător", "jucator", "ionescu", "popescu", "fatigue"]):
-        try:
-            players_data = db_provider.get_ingame_players()
-            
-            # Caută dacă e menționat vreun nume de jucător în query
-            mentioned_player = None
-            for p in players_data:
-                name_parts = p.get("name", "").lower().split()
-                if any(part in query for part in name_parts if len(part) >= 3):
-                    mentioned_player = p
-                    break
-            
-            # Găsește jucătorul menționat sau cel mai obosit jucător
-            target_player = mentioned_player if mentioned_player else max(players_data, key=lambda p: float(p.get("fatigue", 0)))
-            
-            short_name = target_player.get("name", "Jucătorul").split()[0]
-            remark = target_player.get("live_remark", "Prezintă semne de oboseală.")
-            
-            # STT Assistant + Vision Context
-            return {"advice": f"Vertex Vision: {short_name} este epuizat! {remark} Trebuie să atacăm acea zonă pentru contraatac!"}
-        except Exception:
-            pass # Lăsăm să cadă în Fallback
-            
-    # B. Interogări despre Tactica Adversarului (Găuri/Spații)
-    if any(k in query for k in ["spații", "spatii", "găuri", "gauri", "unde", "vulnerabil"]):
-        try:
-            gaps_data = db_provider.get_live_gaps()
-            
-            # Returnează locația și descrierea gap-ului cu severitatea cea mai mare (Critical sau High)
-            critical_gaps = [g for g in gaps_data if str(g.get("severity", "")).lower() == "critical"]
-            if not critical_gaps:
-                critical_gaps = [g for g in gaps_data if str(g.get("severity", "")).lower() == "high"]
-            if not critical_gaps:
-                critical_gaps = gaps_data
-            
-            if critical_gaps:
-                gap = critical_gaps[0]
-                # Sabău Style
-                return {"advice": f"Adversarul e vulnerabil pe {gap.get('location')}! {gap.get('description')} Forțați atacul acolo imediat!"}
-        except Exception:
-            pass # Lăsăm să cadă în Fallback
-            
-    # C. Stabilitate (Fallback)
-    return {"advice": "Analizez datele de joc... Concentrează-te pe menținerea posesiei în zona 14 până identificăm o breșă."}
+    try:
+        # A. Adună tot contextul (RAG)
+        weather_data = _get_live_weather_data()
+        players_data = db_provider.get_ingame_players()
+        gaps_data = db_provider.get_live_gaps()
+        news_titles = fetch_opponent_news()
+        
+        # Nou: Adăugăm și scouting report-ul pregame (cine e veriga slabă)
+        scouting_report = db_provider.get_opponent_weaknesses()
+        
+        if not GOOGLE_API_KEY:
+            return {"advice": "Google API Key lipsește, nu pot folosi AI-ul pentru asistență completă. Analiza locală sugerează să vă concentrați pe contraatac."}
+
+        # B. Construiește Master Prompt-ul
+        prompt = f"""Ești un asistent tactic AI (Omniscient) pentru echipa U Cluj. 
+Răspunde scurt și la obiect (maxim 2-3 propoziții) antrenorului la următoarea întrebare: "{payload.query}"
+
+CONTEXT CURENT LIVE:
+- Vremea: {json.dumps(weather_data)}
+- Statusul Jucătorilor noștri (oboseală): {json.dumps(players_data)}
+- Găuri tactice în apărarea adversă: {json.dumps(gaps_data)}
+- Știri recente despre adversar: {json.dumps(news_titles)}
+- Raport Scouting (Verigi Slabe): {json.dumps(scouting_report)}
+
+Dacă întrebarea este legată de starea terenului/jucători obosiți, folosește datele meteo și biometrice. Dacă e legată de adversar, folosește știrile, scouting report-ul și găurile tactice. Oferă un sfat clar și acționabil."""
+
+        # C. Generează răspunsul cu Gemini
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(prompt)
+        advice = response.text.strip()
+        
+        return {"advice": advice}
+        
+    except Exception as e:
+        logger.error(f"Eroare asistent AI: {e}")
+        return {"advice": "Eroare la procesarea AI-ului. Concentrează-te pe menținerea posesiei în zona 14 până identificăm o breșă."}
 
 if __name__ == "__main__":
     import uvicorn

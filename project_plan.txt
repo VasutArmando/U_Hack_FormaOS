@@ -1,0 +1,32 @@
+# FormaOS Full Integration Plan
+
+This document outlines the end-to-end technical plan required to integrate all components of the FormaOS architecture: the raw hackathon match data, Firebase database, the AI engines (Gemini, Weather, News), and the Flutter frontend.
+
+## Proposed Changes
+
+### 1. Data Ingestion Pipeline (Python / Backend)
+We need to process the raw hackathon data and load it into Firebase.
+- **[NEW] `cloud_run/data_pipeline/ingest_hackathon_data.py`**: A new Python ETL script that uses the `zipfile` module to extract all the `_players_stats.json` files from `Date - meciuri-*.zip`.
+- **Logic**: The script will read historical stats, aggregate player performance across matches, and push the processed profiles to Firebase Firestore.
+
+### 2. Firebase Database Integration (Python / Backend)
+We will deprecate the local SQLite database used for the demo.
+- **[MODIFY] `cloud_run/data_manager.py`**: 
+  - Create a new class `FirebaseDatabaseProvider` inheriting from `DataProvider`.
+  - Use `firebase-admin` to fetch live tracking and pregame intel directly from Firestore.
+  - Update the Singleton `db_provider` to point to this new Firebase class.
+- **[NEW] `cloud_run/firebase_credentials.json`**: You will need to drop your Firebase Service Account key here.
+
+### 3. The Omniscient AI Assistant (Python / Backend)
+We will replace the hardcoded regex logic with a dynamic Retrieval-Augmented Generation (RAG) system.
+- **[MODIFY] `cloud_run/main.py` (Endpoint `/api/v1/ingame/assistant`)**:
+  - Remove the `if "oboseală" in query:` checks.
+  - Gather all current context: `db_provider.get_ingame_players()`, `get_live_weather()`, and `fetch_opponent_news()`.
+  - Construct a Master Prompt that combines the user's audio query with all the gathered data.
+  - Use `google.generativeai` to generate the tactical answer and return it.
+
+### 4. Frontend Integration (Flutter)
+The frontend needs to stop using mocked data and connect to the live endpoints.
+- **[NEW] `flutter_app/lib/repositories/api_data_repository.dart`**: Implement `DataRepository` using the `http` package to fetch from `http://localhost:8000/api/v1/...` (or your Google Cloud Run URL).
+- **[MODIFY] `flutter_app/lib/main.dart`**: Update `setupLocator()` to inject the new `ApiDataRepository` instead of `MockDataRepository`.
+- **[MODIFY] Flutter UI (Assistant)**: Integrate the `speech_to_text` package to record the coach's voice, send the text to the backend, and use `flutter_tts` to read the Gemini answer out loud.

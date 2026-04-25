@@ -22,13 +22,13 @@ class MockDataRepository implements DataRepository {
   }
 
   @override
-  Future<List<TacticalGap>> getPregameGaps() async {
+  Future<List<TacticalGap>> getPregameGaps({String? opponentId}) async {
     final data = await _loadJsonList('assets/mock_data/pregame_gaps.json');
     return data.map((json) => TacticalGap.fromJson(json)).toList();
   }
 
   @override
-  Future<List<PlayerWeakness>> getPregameOpponentWeakness() async {
+  Future<List<PlayerWeakness>> getPregameOpponentWeakness({String? opponentId, String? stadiumId}) async {
     final data = await _loadJsonList('assets/mock_data/pregame_opponent_weakness.json');
     return data.map((json) => PlayerWeakness.fromJson(json)).toList();
   }

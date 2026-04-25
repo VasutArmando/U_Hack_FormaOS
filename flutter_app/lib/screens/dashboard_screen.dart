@@ -14,12 +14,15 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const PregameScreen(),
-    const InGameScreen(),
-    const HalftimeScreen(),
-    const SettingsScreen(),
-  ];
+  Widget _buildSelectedScreen() {
+    switch (_selectedIndex) {
+      case 0: return const PregameScreen();
+      case 1: return const InGameScreen();
+      case 2: return const HalftimeScreen();
+      case 3: return const SettingsScreen();
+      default: return const PregameScreen();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +79,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const VerticalDivider(thickness: 1, width: 1, color: Colors.white10),
           // Conținutul principal (partea dreaptă)
           Expanded(
-            child: _screens[_selectedIndex],
+            child: _buildSelectedScreen(),
           ),
         ],
       ),

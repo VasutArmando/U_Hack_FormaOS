@@ -1,8 +1,13 @@
 import sqlite3
 import json
 import logging
+import os
+from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
+
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 from services.observer_pattern import Observer
 from services.news_engine import generate_pregame_intelligence
@@ -21,11 +26,11 @@ class DataProvider(ABC):
         pass
 
     @abstractmethod
-    def get_chronic_gaps(self) -> List[Dict[str, Any]]:
+    def get_chronic_gaps(self, opponent_id: str = None) -> List[Dict[str, Any]]:
         pass
 
     @abstractmethod
-    def get_opponent_weaknesses(self) -> List[Dict[str, Any]]:
+    def get_opponent_weaknesses(self, opponent_id: str = None, opponent_name: str = "Adversar") -> List[Dict[str, Any]]:
         pass
 
     @abstractmethod
@@ -160,7 +165,7 @@ class GDGDatabaseProvider(DataProvider, Observer):
                     })
             return gaps
 
-    def get_chronic_gaps(self) -> List[Dict[str, Any]]:
+    def get_chronic_gaps(self, opponent_id: str = None) -> List[Dict[str, Any]]:
         # Mapate din arhiva pregame DB
         return [{
             "id": "gap_pre_db",
@@ -170,7 +175,7 @@ class GDGDatabaseProvider(DataProvider, Observer):
             "coordinates": {"x": -80.0, "y": -40.0, "w": 60.0, "h": 100.0}
         }]
 
-    def get_opponent_weaknesses(self) -> List[Dict[str, Any]]:
+    def get_opponent_weaknesses(self, opponent_id: str = None, opponent_name: str = "Adversar") -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -178,7 +183,7 @@ class GDGDatabaseProvider(DataProvider, Observer):
             db_intel = [dict(row) for row in cursor.fetchall()]
             
         # Folosim Gemini și News Engine pentru a rafina rezultatul direct din DB
-        return generate_pregame_intelligence(db_intel, "Adversar")
+        return generate_pregame_intelligence(db_intel, opponent_name)
             
     def get_halftime_changes(self) -> List[Dict[str, Any]]:
         # Predictive Analytics: Analiză Istorică
@@ -194,5 +199,91 @@ class GDGDatabaseProvider(DataProvider, Observer):
     def get_halftime_gaps(self) -> List[Dict[str, Any]]:
         return self.get_live_gaps()
 
+# 3. Implementare Concretă pentru Firebase (Hackathon Data)
+class FirebaseDatabaseProvider(DataProvider, Observer):
+    def __init__(self):
+        self.live_vision_gaps = []
+        self.live_vision_fatigue = {}
+        self.db = self._init_firebase()
+        # Fallback database
+        self.fallback_db = GDGDatabaseProvider()
+        vision_pipeline.attach(self)
+
+    def _init_firebase(self):
+        try:
+            cred_path = Path(__file__).parent / "firebase_credentials.json"
+            if not cred_path.exists():
+                logger.warning("Firebase credentials not found, using fallback SQLite.")
+                return None
+            
+            # Fix for Windows: read JSON manually and fix escaped newlines in private key
+            with open(cred_path, 'r', encoding='utf-8') as f:
+                cred_dict = json.load(f)
+            if 'private_key' in cred_dict:
+                cred_dict['private_key'] = cred_dict['private_key'].replace('\\n', '\n')
+            
+            if not firebase_admin._apps:
+                cred = credentials.Certificate(cred_dict)
+                firebase_admin.initialize_app(cred)
+            return firestore.client()
+        except Exception as e:
+            logger.error(f"Firebase Init Error: {e}")
+            return None
+
+    def update(self, event_type: str, data: Any):
+        if event_type == "VISION_UPDATE":
+            self.live_vision_gaps = data.get("gaps", [])
+            self.live_vision_fatigue = data.get("fatigue_metrics", {})
+            # Update and fallback
+            self.fallback_db.update(event_type, data)
+
+    def get_ingame_players(self) -> List[Dict[str, Any]]:
+        # For this demo, live tracking might still come from fallback/stream
+        return self.fallback_db.get_ingame_players()
+
+    def get_live_gaps(self) -> List[Dict[str, Any]]:
+        # Live gaps come from Vision + Tracking
+        return self.fallback_db.get_live_gaps()
+
+    def get_chronic_gaps(self, opponent_id: str = None) -> List[Dict[str, Any]]:
+        if not self.db:
+            return self.fallback_db.get_chronic_gaps(opponent_id)
+        try:
+            # În producție am putea filtra după opponent_id
+            docs = self.db.collection('chronic_gaps').stream()
+            data = [doc.to_dict() for doc in docs]
+            return data if data else self.fallback_db.get_chronic_gaps(opponent_id)
+        except Exception:
+            return self.fallback_db.get_chronic_gaps(opponent_id)
+
+    def get_opponent_weaknesses(self, opponent_id: str = None, opponent_name: str = "Adversar") -> List[Dict[str, Any]]:
+        if not self.db:
+            return self.fallback_db.get_opponent_weaknesses(opponent_id, opponent_name)
+        try:
+            # We pull LITERALLY ALL DATA (Match Stats)
+            # For the demo, we take the last 15 entries (recent performances)
+            docs = self.db.collection('match_player_stats').limit(15).stream() 
+            raw_match_stats = [doc.to_dict() for doc in docs]
+            
+            if not raw_match_stats:
+                return self.fallback_db.get_opponent_weaknesses(opponent_id, opponent_name)
+                
+            # Gemini will analyze the match-by-match performance
+            return generate_pregame_intelligence(raw_match_stats, opponent_name)
+        except Exception as e:
+            logger.error(f"Firestore get_opponent_weaknesses error: {e}")
+            return self.fallback_db.get_opponent_weaknesses(opponent_id, opponent_name)
+
+    def get_halftime_changes(self) -> List[Dict[str, Any]]:
+        if not self.db:
+            return self.fallback_db.get_halftime_changes()
+        try:
+            docs = self.db.collection('halftime_changes').stream()
+            data = [doc.to_dict() for doc in docs]
+            return data if data else self.fallback_db.get_halftime_changes()
+        except Exception:
+            return self.fallback_db.get_halftime_changes()
+
 # Singleton Export
-db_provider = GDGDatabaseProvider()
+# db_provider = GDGDatabaseProvider()
+db_provider = FirebaseDatabaseProvider()

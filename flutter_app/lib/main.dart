@@ -3,13 +3,18 @@ import 'screens/dashboard_screen.dart';
 
 import 'package:get_it/get_it.dart';
 import 'repositories/data_repository.dart';
-import 'repositories/mock_data_repository.dart';
+// import 'repositories/mock_data_repository.dart';
+import 'repositories/api_data_repository.dart';
 import 'services/settings_service.dart';
 
 final getIt = GetIt.instance;
 
 void setupLocator() {
-  getIt.registerLazySingleton<DataRepository>(() => MockDataRepository());
+  // Use ApiDataRepository for live integration5
+  // Use 10.0.2.2 for Android Emulator, or 127.0.0.1 for iOS/Web
+  getIt.registerLazySingleton<DataRepository>(
+      () => ApiDataRepository(baseUrl: 'http://127.0.0.1:8000'));
+  // getIt.registerLazySingleton<DataRepository>(() => MockDataRepository());
   getIt.registerLazySingleton<SettingsService>(() => SettingsService());
 }
 

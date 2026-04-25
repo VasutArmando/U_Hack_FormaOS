@@ -1,0 +1,20 @@
+Date - meciuri/CFR Cluj - Universitatea Craiova, 2-3_players_stats.json
+Date - meciuri/Unirea Slobozia - Oţelul, 0-0_players_stats.json
+Date - meciuri/Botoşani - Unirea Slobozia, 4-0_players_stats.json
+Date - meciuri/Universitatea Craiova - Universitatea Cluj, 2-1_players_stats.json
+Date - meciuri/Argeș - Csikszereda Miercurea Ciuc, 3-1_players_stats.json
+Date - meciuri/Dinamo Bucureşti - FCS Bucureşti, 4-3_players_stats.json
+Date - meciuri/CFR Cluj - Unirea Slobozia, 2-1_players_stats.json
+Date - meciuri/FCS Bucureşti - Farul Constanţa, 1-2_players_stats.json
+Date - meciuri/Oţelul - Petrolul 52, 0-0_players_stats.json
+Date - meciuri/Hermannstadt - Universitatea Cluj, 2-2_players_stats.json
+Date - meciuri/Petrolul 52 - UTA Arad, 1-2_players_stats.json
+Date - meciuri/Unirea Slobozia - Csikszereda Miercurea Ciuc, 6-1_players_stats.json
+Date - meciuri/Universitatea Cluj - UTA Arad, 1-1_players_stats.json
+Date - meciuri/UTA Arad - Universitatea Craiova, 3-3_players_stats.json
+Date - meciuri/Hermannstadt - Metaloglobus, 2-2_players_stats.json
+Date - meciuri/Csikszereda Miercurea Ciuc - Rapid Bucureşti, 0-2_players_stats.json
+Date - meciuri/Argeș - Rapid Bucureşti, 0-2_players_stats.json
+Date - meciuri/Farul Constanţa - Metaloglobus, 2-1_players_stats.json
+Date - meciuri/Metaloglobus - Petrolul 52, 0-3_players_stats.json
+Date - meciuri/CFR Cluj - Argeș, 0-2_players_stats.json

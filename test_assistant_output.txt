@@ -1,0 +1,3 @@
+{
+  "advice": "Adversarul e vulnerabil pe Right Flank! Vertex AI: Apărarea adversă a lăsat un spațiu masiv pe contraatac. Forțați atacul acolo imediat!"
+}

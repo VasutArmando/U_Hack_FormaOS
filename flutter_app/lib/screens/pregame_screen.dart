@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../models/match_data.dart';
 import '../repositories/data_repository.dart';
+import '../services/settings_service.dart';
 import '../widgets/football_pitch.dart';
 
 class PregameScreen extends StatefulWidget {
@@ -12,7 +13,26 @@ class PregameScreen extends StatefulWidget {
 }
 
 class _PregameScreenState extends State<PregameScreen> {
+  final _settingsService = getIt<SettingsService>();
   String _weaknessFilter = 'All';
+  String? _opponentId;
+  String? _stadiumId;
+  bool _isSettingsLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMatchSettings();
+  }
+
+  Future<void> _loadMatchSettings() async {
+    final settings = await _settingsService.loadSettings();
+    setState(() {
+      _opponentId = settings['nextOpponentId'];
+      _stadiumId = settings['stadiumId'];
+      _isSettingsLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +48,8 @@ class _PregameScreenState extends State<PregameScreen> {
               indicatorWeight: 4.0,
               labelColor: Color(0xFF00FFCC),
               unselectedLabelColor: Colors.white54,
-              labelStyle: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2),
+              labelStyle:
+                  TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2),
               tabs: [
                 Tab(icon: Icon(Icons.analytics), text: 'CHRONIC GAPS'),
                 Tab(icon: Icon(Icons.psychology), text: 'OPPONENT WEAKNESS'),
@@ -49,23 +70,43 @@ class _PregameScreenState extends State<PregameScreen> {
   }
 
   Widget _buildChronicGapsTab() {
+    if (_isSettingsLoading) {
+      return const Center(
+          child: CircularProgressIndicator(color: Color(0xFF00FFCC)));
+    }
     final repository = getIt<DataRepository>();
     return FutureBuilder<List<TacticalGap>>(
-      future: repository.getPregameGaps(),
+      future: repository.getPregameGaps(opponentId: _opponentId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFF00FFCC)));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(color: Color(0xFF00FFCC)),
+                const SizedBox(height: 16),
+                Text('Analiză tactică Date - meciuri...',
+                    style: TextStyle(color: Colors.white.withOpacity(0.7))),
+              ],
+            ),
+          );
         } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+          return Center(
+              child: Text('Error: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red)));
         }
-        
+
         final gaps = snapshot.data ?? [];
         return SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('PREDICTED TACTICAL GAPS', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+              const Text('PREDICTED TACTICAL GAPS',
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
               const SizedBox(height: 24),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,15 +154,24 @@ class _PregameScreenState extends State<PregameScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(gap.location, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    Text(gap.location,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white)),
                     Chip(
-                      label: Text(gap.severity, style: const TextStyle(fontSize: 10, color: Colors.white)),
-                      backgroundColor: gap.severity == 'Critical' ? Colors.red : Colors.orange,
+                      label: Text(gap.severity,
+                          style: const TextStyle(
+                              fontSize: 10, color: Colors.white)),
+                      backgroundColor: gap.severity == 'Critical'
+                          ? Colors.red
+                          : Colors.orange,
                     )
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(gap.description, style: const TextStyle(color: Colors.white70)),
+                Text(gap.description,
+                    style: const TextStyle(color: Colors.white70)),
               ],
             ),
           ),
@@ -131,23 +181,44 @@ class _PregameScreenState extends State<PregameScreen> {
   }
 
   Widget _buildOpponentWeaknessTab() {
+    if (_isSettingsLoading) {
+      return const Center(
+          child: CircularProgressIndicator(color: Color(0xFF00FFCC)));
+    }
     final repository = getIt<DataRepository>();
     return FutureBuilder<List<PlayerWeakness>>(
-      future: repository.getPregameOpponentWeakness(),
+      future: repository.getPregameOpponentWeakness(
+          opponentId: _opponentId, stadiumId: _stadiumId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFF00FFCC)));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(color: Color(0xFF00FFCC)),
+                const SizedBox(height: 16),
+                Text('Omniscient AI: Generare scouting report din Firebase...',
+                    style: TextStyle(color: Colors.white.withOpacity(0.7))),
+              ],
+            ),
+          );
         } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+          return Center(
+              child: Text('Error: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red)));
         }
-        
+
         final players = snapshot.data ?? [];
         return Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('OPPONENT PLAYER WEAKNESSES', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+              const Text('OPPONENT PLAYER WEAKNESSES',
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -175,30 +246,49 @@ class _PregameScreenState extends State<PregameScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(player.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
-                                Text('Score: ${player.overallWeaknessScore}', style: const TextStyle(color: Color(0xFF00FFCC), fontWeight: FontWeight.bold)),
+                                Text(player.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        color: Colors.white)),
+                                Text('Score: ${player.overallWeaknessScore}',
+                                    style: const TextStyle(
+                                        color: Color(0xFF00FFCC),
+                                        fontWeight: FontWeight.bold)),
                               ],
                             ),
                             const Divider(color: Colors.white10, height: 24),
-                            if (_weaknessFilter == 'All' || _weaknessFilter == 'Physical State')
+                            if (_weaknessFilter == 'All' ||
+                                _weaknessFilter == 'Physical State')
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8.0),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(Icons.fitness_center, size: 18, color: Colors.orangeAccent),
+                                    const Icon(Icons.fitness_center,
+                                        size: 18, color: Colors.orangeAccent),
                                     const SizedBox(width: 8),
-                                    Expanded(child: Text('Physical: ${player.physicalState}', style: const TextStyle(color: Colors.white70))),
+                                    Expanded(
+                                        child: Text(
+                                            'Physical: ${player.physicalState}',
+                                            style: const TextStyle(
+                                                color: Colors.white70))),
                                   ],
                                 ),
                               ),
-                            if (_weaknessFilter == 'All' || _weaknessFilter == 'Psychological State')
+                            if (_weaknessFilter == 'All' ||
+                                _weaknessFilter == 'Psychological State')
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.psychology, size: 18, color: Colors.blueAccent),
+                                  const Icon(Icons.psychology,
+                                      size: 18, color: Colors.blueAccent),
                                   const SizedBox(width: 8),
-                                  Expanded(child: Text('Psychological: ${player.psychologicalState}', style: const TextStyle(color: Colors.white70))),
+                                  Expanded(
+                                      child: Text(
+                                          'Psychological: ${player.psychologicalState}',
+                                          style: const TextStyle(
+                                              color: Colors.white70))),
                                 ],
                               )
                           ],
@@ -226,7 +316,10 @@ class _PregameScreenState extends State<PregameScreen> {
       },
       selectedColor: const Color(0xFF00FFCC).withValues(alpha: 0.3),
       backgroundColor: Colors.white10,
-      labelStyle: TextStyle(color: _weaknessFilter == label ? const Color(0xFF00FFCC) : Colors.white),
+      labelStyle: TextStyle(
+          color: _weaknessFilter == label
+              ? const Color(0xFF00FFCC)
+              : Colors.white),
     );
   }
 }
