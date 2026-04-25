@@ -6,16 +6,19 @@ from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import asyncio
 
 # Import servicii noi de AI și Meteo
 from services.weather_engine import get_live_weather, process_weather_tactics, get_city_for_stadium
+from services.stadium_vision_service import vision_pipeline
+from data_manager import db_provider
 
 logger = logging.getLogger("uvicorn")
 logger.setLevel(logging.INFO)
 
 app = FastAPI(title="FORMA OS - Backend Hub (Standalone Over-Redo)")
 
-# 1. CORS Setup
+# 1. CORS Setup & Startup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,6 +26,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_event():
+    # Pornim simularea de viziune pe stadion în background
+    asyncio.create_task(vision_pipeline.start_camera_stream())
+    
+@app.on_event("shutdown")
+async def shutdown_event():
+    vision_pipeline.stop_camera_stream()
 
 # 2. Funcția Helper de Ingestie (Safe JSON Loading)
 BASE_DATA_PATH = Path(__file__).parent / "data"
@@ -79,8 +91,7 @@ async def get_stadiums(request: Request) -> Any:
 # Pregame
 @app.get("/api/v1/pregame/chronic-gaps")
 async def pregame_chronic_gaps(request: Request) -> Any:
-    data = _load_json("pregame_gaps.json")
-    gaps = data if isinstance(data, list) else data.get("gaps", [])
+    gaps = db_provider.get_chronic_gaps()
     
     # Format requirements: Toate coordonatele tactice pentru 'Chronic Gaps' (M4) trebuie returnate ca obiecte de tip Rect (x, y, w, h) compatibile cu sistemul de desenare din Flutter.
     for gap in gaps:
@@ -101,8 +112,7 @@ async def pregame_chronic_gaps(request: Request) -> Any:
 @app.get("/api/v1/pregame/opponent-weakness")
 async def pregame_opponent_weakness(request: Request) -> Any:
     weather_data = _get_live_weather_data()
-    raw_data = _load_json("pregame_opponent_weakness.json")
-    players = raw_data if isinstance(raw_data, list) else raw_data.get("players", [])
+    players = db_provider.get_opponent_weaknesses()
     
     # Preluăm tacticile generate de AI
     cache_path = BASE_DATA_PATH / "current_weather_tactics.json"
@@ -135,13 +145,11 @@ async def pregame_opponent_weakness(request: Request) -> Any:
 # InGame
 @app.get("/api/v1/ingame/live-gaps")
 async def ingame_live_gaps(request: Request) -> Any:
-    data = _load_json("ingame_gaps.json")
-    return data if isinstance(data, list) else data.get("gaps", [])
+    return db_provider.get_live_gaps()
 
 @app.get("/api/v1/ingame/opponent-status")
 async def ingame_opponent_status(request: Request) -> Any:
-    data = _load_json("ingame_players.json")
-    players = data if isinstance(data, list) else data.get("players", [])
+    players = db_provider.get_ingame_players()
     
     weather_data = _get_live_weather_data()
     is_raining = "rain" in weather_data.get("condition", "").lower()
@@ -163,13 +171,11 @@ async def ingame_opponent_status(request: Request) -> Any:
 # HalfTime
 @app.get("/api/v1/halftime/tactical-gaps")
 async def halftime_tactical_gaps(request: Request) -> Any:
-    data = _load_json("halftime_gaps.json")
-    return data if isinstance(data, list) else data.get("gaps", [])
+    return db_provider.get_halftime_gaps()
 
 @app.get("/api/v1/halftime/predicted-changes")
 async def halftime_predicted_changes(request: Request) -> Any:
-    data = _load_json("halftime_changes.json")
-    changes = data if isinstance(data, list) else data.get("changes", [])
+    changes = db_provider.get_halftime_changes()
     
     for c in changes:
         try: 
@@ -214,8 +220,7 @@ async def ingame_assistant(request: Request, payload: AssistantRequest) -> Dict[
     # A. Interogări despre Jucători (Oboseală/Status)
     if any(k in query for k in ["oboseală", "oboseala", "obosit", "jucător", "jucator", "ionescu", "popescu", "fatigue"]):
         try:
-            raw_p = _load_json("ingame_players.json")
-            players_data = raw_p if isinstance(raw_p, list) else raw_p.get("players", [])
+            players_data = db_provider.get_ingame_players()
             
             # Caută dacă e menționat vreun nume de jucător în query
             mentioned_player = None
@@ -231,16 +236,15 @@ async def ingame_assistant(request: Request, payload: AssistantRequest) -> Dict[
             short_name = target_player.get("name", "Jucătorul").split()[0]
             remark = target_player.get("live_remark", "Prezintă semne de oboseală.")
             
-            # Sabău Style
-            return {"advice": f"{short_name} este epuizat! {remark} Trebuie să atacăm acea zonă acum!"}
+            # STT Assistant + Vision Context
+            return {"advice": f"Vertex Vision: {short_name} este epuizat! {remark} Trebuie să atacăm acea zonă pentru contraatac!"}
         except Exception:
             pass # Lăsăm să cadă în Fallback
             
     # B. Interogări despre Tactica Adversarului (Găuri/Spații)
     if any(k in query for k in ["spații", "spatii", "găuri", "gauri", "unde", "vulnerabil"]):
         try:
-            raw_g = _load_json("ingame_gaps.json")
-            gaps_data = raw_g if isinstance(raw_g, list) else raw_g.get("gaps", [])
+            gaps_data = db_provider.get_live_gaps()
             
             # Returnează locația și descrierea gap-ului cu severitatea cea mai mare (Critical sau High)
             critical_gaps = [g for g in gaps_data if str(g.get("severity", "")).lower() == "critical"]
