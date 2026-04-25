@@ -12,7 +12,7 @@ import google.generativeai as genai
 
 # Import servicii noi de AI și Meteo
 from services.weather_engine import get_live_weather, process_weather_tactics, get_city_for_stadium
-from services.news_engine import fetch_opponent_news
+from services.news_engine import fetch_news
 from services.stadium_vision_service import vision_pipeline
 from data_manager import db_provider
 
@@ -87,13 +87,17 @@ def analyze_sentiment() -> Dict[str, Any]:
 # Settings
 @app.get("/api/v1/settings/teams")
 async def get_teams(request: Request) -> Any:
-    data = _load_json("teams.json")
-    return data if isinstance(data, list) else data.get("teams", [])
+    return db_provider.get_teams()
 
 @app.get("/api/v1/settings/stadiums")
 async def get_stadiums(request: Request) -> Any:
-    data = _load_json("stadiums.json")
-    return data if isinstance(data, list) else data.get("stadiums", [])
+    return db_provider.get_stadiums()
+
+@app.get("/api/v1/matches")
+async def get_all_matches(request: Request) -> Any:
+    if hasattr(db_provider, 'get_all_matches'):
+        return db_provider.get_all_matches()
+    return {}
 
 # Pregame
 @app.get("/api/v1/pregame/chronic-gaps")
@@ -121,8 +125,7 @@ async def pregame_opponent_weakness(request: Request, opponent_id: Optional[str]
     # Resolve team name for news search
     opponent_name = "Adversar"
     if opponent_id:
-        teams = _load_json("teams.json")
-        team_list = teams if isinstance(teams, list) else teams.get("teams", [])
+        team_list = db_provider.get_teams()
         opponent_name = next((t["name"] for t in team_list if t["id"] == opponent_id), "Adversar")
     
     # Resolve city for weather
@@ -247,7 +250,7 @@ async def ingame_assistant(request: Request, payload: AssistantRequest) -> Dict[
         weather_data = _get_live_weather_data()
         players_data = db_provider.get_ingame_players()
         gaps_data = db_provider.get_live_gaps()
-        news_titles = fetch_opponent_news()
+        news_titles = fetch_news("Adversar", is_player=False)
         
         # Nou: Adăugăm și scouting report-ul pregame (cine e veriga slabă)
         scouting_report = db_provider.get_opponent_weaknesses()

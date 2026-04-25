@@ -1,18 +1,70 @@
 [
-  {"id": "t1", "name": "FCSB"},
-  {"id": "t2", "name": "CFR Cluj"},
-  {"id": "t3", "name": "Universitatea Craiova"},
-  {"id": "t4", "name": "Farul Constanta"},
-  {"id": "t5", "name": "Rapid Bucuresti"},
-  {"id": "t6", "name": "Sepsi OSK"},
-  {"id": "t7", "name": "FCU 1948 Craiova"},
-  {"id": "t8", "name": "FC Botosani"},
-  {"id": "t9", "name": "FC Voluntari"},
-  {"id": "t10", "name": "Universitatea Cluj"},
-  {"id": "t11", "name": "Petrolul Ploiesti"},
-  {"id": "t12", "name": "FC Hermannstadt"},
-  {"id": "t13", "name": "UTA Arad"},
-  {"id": "t14", "name": "Dinamo Bucuresti"},
-  {"id": "t15", "name": "Poli Iasi"},
-  {"id": "t16", "name": "Otelul Galati"}
+  {
+    "id": "t1",
+    "name": "Argeș"
+  },
+  {
+    "id": "t2",
+    "name": "Botoşani"
+  },
+  {
+    "id": "t3",
+    "name": "CFR Cluj"
+  },
+  {
+    "id": "t4",
+    "name": "Csikszereda Miercurea Ciuc"
+  },
+  {
+    "id": "t5",
+    "name": "Dinamo Bucureşti"
+  },
+  {
+    "id": "t6",
+    "name": "FCS Bucureşti"
+  },
+  {
+    "id": "t7",
+    "name": "Farul Constanţa"
+  },
+  {
+    "id": "t8",
+    "name": "Hermannstadt"
+  },
+  {
+    "id": "t9",
+    "name": "Metaloglobus"
+  },
+  {
+    "id": "t10",
+    "name": "Oţelul"
+  },
+  {
+    "id": "t11",
+    "name": "Petrolul 52"
+  },
+  {
+    "id": "t12",
+    "name": "Rapid Bucureşti"
+  },
+  {
+    "id": "t13",
+    "name": "UTA Arad"
+  },
+  {
+    "id": "t14",
+    "name": "Unirea Slobozia"
+  },
+  {
+    "id": "t15",
+    "name": "Universitatea Cluj"
+  },
+  {
+    "id": "t16",
+    "name": "Universitatea Craiova"
+  },
+  {
+    "id": "t17",
+    "name": "Unknown"
+  }
 ]

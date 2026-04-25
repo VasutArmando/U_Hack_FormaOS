@@ -16,6 +16,7 @@ class _PregameScreenState extends State<PregameScreen> {
   final _settingsService = getIt<SettingsService>();
   String _weaknessFilter = 'All';
   String? _opponentId;
+  String? _opponentName;
   String? _stadiumId;
   bool _isSettingsLoading = true;
 
@@ -27,8 +28,22 @@ class _PregameScreenState extends State<PregameScreen> {
 
   Future<void> _loadMatchSettings() async {
     final settings = await _settingsService.loadSettings();
+    final repository = getIt<DataRepository>();
+    
+    String? opponentName;
+    if (settings['nextOpponentId'] != null) {
+       try {
+         final teams = await repository.getTeams();
+         final team = teams.firstWhere((t) => t.id == settings['nextOpponentId'], orElse: () => Team(id: '', name: 'Unknown Opponent'));
+         opponentName = team.name;
+       } catch (e) {
+         opponentName = 'Unknown Opponent';
+       }
+    }
+
     setState(() {
       _opponentId = settings['nextOpponentId'];
+      _opponentName = opponentName;
       _stadiumId = settings['stadiumId'];
       _isSettingsLoading = false;
     });
@@ -74,6 +89,12 @@ class _PregameScreenState extends State<PregameScreen> {
       return const Center(
           child: CircularProgressIndicator(color: Color(0xFF00FFCC)));
     }
+    if (_opponentId == null) {
+      return const Center(
+        child: Text('Please select an opponent in the Settings screen.', 
+            style: TextStyle(color: Colors.white, fontSize: 16)),
+      );
+    }
     final repository = getIt<DataRepository>();
     return FutureBuilder<List<TacticalGap>>(
       future: repository.getPregameGaps(opponentId: _opponentId),
@@ -102,8 +123,8 @@ class _PregameScreenState extends State<PregameScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('PREDICTED TACTICAL GAPS',
-                  style: TextStyle(
+              Text('PREDICTED TACTICAL GAPS: ${_opponentName ?? ""}'.toUpperCase(),
+                  style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white)),
@@ -185,6 +206,12 @@ class _PregameScreenState extends State<PregameScreen> {
       return const Center(
           child: CircularProgressIndicator(color: Color(0xFF00FFCC)));
     }
+    if (_opponentId == null) {
+      return const Center(
+        child: Text('Please select an opponent in the Settings screen.', 
+            style: TextStyle(color: Colors.white, fontSize: 16)),
+      );
+    }
     final repository = getIt<DataRepository>();
     return FutureBuilder<List<PlayerWeakness>>(
       future: repository.getPregameOpponentWeakness(
@@ -214,8 +241,8 @@ class _PregameScreenState extends State<PregameScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('OPPONENT PLAYER WEAKNESSES',
-                  style: TextStyle(
+              Text('OPPONENT WEAKNESS: ${_opponentName ?? ""}'.toUpperCase(),
+                  style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white)),
@@ -227,6 +254,8 @@ class _PregameScreenState extends State<PregameScreen> {
                   _buildFilterChip('Physical State'),
                   const SizedBox(width: 8),
                   _buildFilterChip('Psychological State'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Tactical Tendencies'),
                 ],
               ),
               const SizedBox(height: 24),
@@ -278,19 +307,38 @@ class _PregameScreenState extends State<PregameScreen> {
                               ),
                             if (_weaknessFilter == 'All' ||
                                 _weaknessFilter == 'Psychological State')
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.psychology,
-                                      size: 18, color: Colors.blueAccent),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                      child: Text(
-                                          'Psychological: ${player.psychologicalState}',
-                                          style: const TextStyle(
-                                              color: Colors.white70))),
-                                ],
-                              )
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.psychology,
+                                        size: 18, color: Colors.blueAccent),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                        child: Text(
+                                            'Psychological: ${player.psychologicalState}',
+                                            style: const TextStyle(
+                                                color: Colors.white70))),
+                                  ],
+                                ),
+                              ),
+                            if (_weaknessFilter == 'All' ||
+                                _weaknessFilter == 'Tactical Tendencies')
+                              if (player.tacticalTendencies.isNotEmpty)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.lightbulb_outline,
+                                        size: 18, color: Colors.yellowAccent),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                        child: Text(
+                                            'Tactics: ${player.tacticalTendencies}',
+                                            style: const TextStyle(
+                                                color: Colors.white70))),
+                                  ],
+                                )
                           ],
                         ),
                       ),

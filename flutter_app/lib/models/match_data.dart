@@ -67,6 +67,7 @@ class PlayerWeakness {
   final String name;
   final String physicalState;
   final String psychologicalState;
+  final String tacticalTendencies;
   final double overallWeaknessScore;
 
   PlayerWeakness({
@@ -74,6 +75,7 @@ class PlayerWeakness {
     required this.name,
     required this.physicalState,
     required this.psychologicalState,
+    required this.tacticalTendencies,
     required this.overallWeaknessScore,
   });
 
@@ -83,6 +85,7 @@ class PlayerWeakness {
       name: json['name'] ?? 'Unknown',
       physicalState: json['physical_state'] ?? '',
       psychologicalState: json['psychological_state'] ?? '',
+      tacticalTendencies: json['tactical_tendencies'] ?? '',
       overallWeaknessScore: (json['overall_weakness_score'] ?? json['weakness_score'] ?? 0).toDouble(),
     );
   }
