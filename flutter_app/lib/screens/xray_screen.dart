@@ -72,7 +72,7 @@ class _XrayScreenState extends State<XrayScreen> {
                 icon: const Icon(Icons.sync),
                 label: const Text("Load Latest Analysis"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent.withOpacity(0.2),
+                  backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
                   foregroundColor: Colors.redAccent,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -150,7 +150,7 @@ class XRayPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // 1. DESENARE TEREN (Minimal Pitch) cu opacitate de 10%
     final pitchPaint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
+      ..color = Colors.white.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
@@ -202,9 +202,9 @@ class XRayPainter extends CustomPainter {
       // Heatmap effect cu RadialGradient
       final gradient = RadialGradient(
         colors: [
-          centerColor.withOpacity(0.8), // Centrul foarte dens
-          centerColor.withOpacity(0.4),
-          centerColor.withOpacity(0.0), // Marginile disipate
+          centerColor.withValues(alpha: 0.8), // Centrul foarte dens
+          centerColor.withValues(alpha: 0.4),
+          centerColor.withValues(alpha: 0.0), // Marginile disipate
         ],
         stops: const [0.0, 0.4, 1.0],
       );
@@ -217,7 +217,7 @@ class XRayPainter extends CustomPainter {
 
       // Indicator vizual al "Epicentrului" golului lăsat liber
       final centerDot = Paint()
-        ..color = Colors.white.withOpacity(0.9)
+        ..color = Colors.white.withValues(alpha: 0.9)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(cx, cy), 3.0, centerDot);
 

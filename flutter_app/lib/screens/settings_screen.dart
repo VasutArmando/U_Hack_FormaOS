@@ -6,7 +6,7 @@ import '../services/settings_service.dart';
 import 'package:intl/intl.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -130,7 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Text('Next Opponent Team', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedTeamId,
+                    initialValue: _selectedTeamId,
                     decoration: const InputDecoration(
                       filled: true,
                       fillColor: Colors.white10,
@@ -203,7 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Text('Stadium', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedStadiumId,
+                    initialValue: _selectedStadiumId,
                     decoration: const InputDecoration(
                       filled: true,
                       fillColor: Colors.white10,

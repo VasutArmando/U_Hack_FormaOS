@@ -5,7 +5,7 @@ import '../repositories/data_repository.dart';
 import '../widgets/football_pitch.dart';
 
 class HalftimeScreen extends StatefulWidget {
-  const HalftimeScreen({Key? key}) : super(key: key);
+  const HalftimeScreen({super.key});
 
   @override
   State<HalftimeScreen> createState() => _HalftimeScreenState();
@@ -160,7 +160,7 @@ class _HalftimeScreenState extends State<HalftimeScreen> {
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(20),
                         leading: CircleAvatar(
-                          backgroundColor: const Color(0xFF00FFCC).withOpacity(0.2),
+                          backgroundColor: const Color(0xFF00FFCC).withValues(alpha: 0.2),
                           child: Text('${change.likelihood}%', style: const TextStyle(color: Color(0xFF00FFCC), fontWeight: FontWeight.bold, fontSize: 12)),
                         ),
                         title: Text(change.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),

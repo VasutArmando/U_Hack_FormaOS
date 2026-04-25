@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/utils/biomechanics.dart'; 
+import 'package:forma_os_app/utils/biomechanics.dart'; 
 
 void main() {
   group('🛡️ SHIELD - Biomechanics Calculator Unit Tests', () {

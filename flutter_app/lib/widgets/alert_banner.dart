@@ -15,7 +15,6 @@ class AlertBanner extends StatelessWidget {
           
           final String? warning = xray['compactness_warning'];
           final double? gapWidth = xray['top_gap_m'];
-          final double? xtThreat = xray['xt_threat'];
           final double? passProb = xray['pass_probability'];
           
           List<Widget> banners = [];
@@ -36,7 +35,7 @@ class AlertBanner extends StatelessWidget {
               color: Colors.greenAccent,
               icon: Icons.filter_center_focus,
               title: "X-RAY: GAP EXPLOATABIL DETECTAT",
-              message: "Spațiu liber: \${gapWidth.toStringAsFixed(1)}m.\nProbabilitate de pasă reușită: \${passProb.toStringAsFixed(0)}% (xT: \${xtThreat?.toStringAsFixed(2)})",
+              message: "Spațiu liber: ${gapWidth.toStringAsFixed(1)}m.\nProbabilitate de pasă reușită: ${passProb.toStringAsFixed(0)}% (xT: ${(xray['xt_threat'] as double?)?.toStringAsFixed(2)})",
             ));
           }
           
@@ -75,10 +74,10 @@ class AlertBanner extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.9),
+        color: color.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: color.withOpacity(0.4), blurRadius: 15, spreadRadius: 2)
+          BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 15, spreadRadius: 2)
         ],
         border: Border.all(color: Colors.white, width: 1.5)
       ),

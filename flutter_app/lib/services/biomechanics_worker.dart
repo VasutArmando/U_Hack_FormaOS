@@ -1,5 +1,5 @@
+// ignore_for_file: deprecated_member_use
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 // Interoperabilitate nativă Web pentru a controla Worker-ul
 // ignore: avoid_web_libraries_in_flutter

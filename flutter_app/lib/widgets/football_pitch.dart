@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/match_data.dart';
@@ -6,7 +5,7 @@ import '../models/match_data.dart';
 class FootballPitch extends StatelessWidget {
   final List<TacticalGap> gaps;
 
-  const FootballPitch({Key? key, required this.gaps}) : super(key: key);
+  const FootballPitch({super.key, required this.gaps});
 
   @override
   Widget build(BuildContext context) {
@@ -65,8 +64,8 @@ class FootballPitch extends StatelessWidget {
           borderRadius: BorderRadius.circular(100), // Ellipse like appearance
           gradient: RadialGradient(
             colors: [
-              severityColor.withOpacity(0.5),
-              severityColor.withOpacity(0.1),
+              severityColor.withValues(alpha: 0.5),
+              severityColor.withValues(alpha: 0.1),
               Colors.transparent,
             ],
             stops: const [0.0, 0.6, 1.0],
@@ -84,7 +83,7 @@ class FootballPitch extends StatelessWidget {
                 border: Border.all(color: severityColor, width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: severityColor.withOpacity(0.3),
+                    color: severityColor.withValues(alpha: 0.3),
                     blurRadius: 8,
                     spreadRadius: 2,
                   )
@@ -123,7 +122,7 @@ class _PitchPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.4)
+      ..color = Colors.white.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
@@ -142,7 +141,7 @@ class _PitchPainter extends CustomPainter {
 
     // Center spot
     final spotPaint = Paint()
-      ..color = Colors.white.withOpacity(0.6)
+      ..color = Colors.white.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, 4, spotPaint);
 

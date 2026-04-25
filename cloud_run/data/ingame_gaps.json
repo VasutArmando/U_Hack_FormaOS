@@ -1,0 +1,16 @@
+[
+  {
+    "id": "gap_in_1",
+    "location": "Right Wing",
+    "description": "Right back is exhausted. Space opening up behind him.",
+    "severity": "Critical",
+    "coordinates": {"x": 80, "y": 50, "w": 60, "h": 80}
+  },
+  {
+    "id": "gap_in_2",
+    "location": "Deep Midfield",
+    "description": "Midfield block is dropping too deep, yielding space for long shots.",
+    "severity": "High",
+    "coordinates": {"x": 20, "y": 0, "w": 50, "h": 40}
+  }
+]

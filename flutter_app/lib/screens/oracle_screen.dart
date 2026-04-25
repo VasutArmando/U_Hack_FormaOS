@@ -66,7 +66,7 @@ class _OracleScreenState extends State<OracleScreen> {
                 icon: const Icon(Icons.sync),
                 label: const Text("Load Latest Analysis"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00FFCC).withOpacity(0.2),
+                  backgroundColor: const Color(0xFF00FFCC).withValues(alpha: 0.2),
                   foregroundColor: const Color(0xFF00FFCC),
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
@@ -87,7 +87,7 @@ class _OracleScreenState extends State<OracleScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.redAccent.withOpacity(0.1),
+                        color: Colors.redAccent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.redAccent),
                       ),
@@ -174,7 +174,7 @@ class NetworkPainter extends CustomPainter {
       
       // Grosimea și opacitatea calculate pe baza greutății liniei (numărul de pase)
       final paintEdge = Paint()
-        ..color = Colors.white.withOpacity((weight / 30).clamp(0.1, 0.6))
+        ..color = Colors.white.withValues(alpha: (weight / 30).clamp(0.1, 0.6))
         ..strokeWidth = (weight / 4).clamp(1.0, 10.0)
         ..style = PaintingStyle.stroke;
 
@@ -197,7 +197,7 @@ class NetworkPainter extends CustomPainter {
       // Efect vizual de Glow (Strălucire) pentru hub-ul central
       if (isHub) {
          final shadowPaint = Paint()
-          ..color = nodeColor.withOpacity(0.5)
+          ..color = nodeColor.withValues(alpha: 0.5)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
          canvas.drawCircle(offset, radius + 10, shadowPaint);
       }

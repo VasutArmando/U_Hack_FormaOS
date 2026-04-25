@@ -1,0 +1,23 @@
+[
+  {
+    "id": "change_1",
+    "title": "Sub In Fast Winger on Right",
+    "description": "The opponent's Left Back is exhausted and carrying a yellow card. A fresh pacey winger will force errors.",
+    "likelihood": 95,
+    "category": "Offensive"
+  },
+  {
+    "id": "change_2",
+    "title": "Change Studs for Midfielders",
+    "description": "Pitch is getting heavier due to rain. 3 players slipped in the first half. Switch to SG (Soft Ground) studs.",
+    "likelihood": 80,
+    "category": "Equipment"
+  },
+  {
+    "id": "change_3",
+    "title": "Exploit Central Space",
+    "description": "Instruct the Playmaker to operate higher up in Zone 14. Their defensive mids are failing to track back quickly.",
+    "likelihood": 85,
+    "category": "Tactical"
+  }
+]

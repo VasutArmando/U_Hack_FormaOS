@@ -14,9 +14,9 @@ class OpponentIntelligenceCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF1E1E1E),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.amberAccent.withOpacity(0.5), width: 1.5),
+            border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.5), width: 1.5),
             boxShadow: [
-              BoxShadow(color: Colors.amberAccent.withOpacity(0.1), blurRadius: 30, offset: const Offset(0, 10)),
+              BoxShadow(color: Colors.amberAccent.withValues(alpha: 0.1), blurRadius: 30, offset: const Offset(0, 10)),
             ],
           ),
           child: ListView(
@@ -50,7 +50,7 @@ class OpponentIntelligenceCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.amberAccent.withOpacity(0.1),
+                      color: Colors.amberAccent.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.psychology, size: 48, color: Colors.amberAccent),
@@ -96,9 +96,9 @@ class OpponentIntelligenceCard extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +106,7 @@ class OpponentIntelligenceCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 28),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class SpeechService {
@@ -7,8 +8,8 @@ class SpeechService {
   Future<bool> initialize() async {
     if (!_isInitialized) {
       _isInitialized = await _speech.initialize(
-        onError: (error) => print("Speech recognition error: \$error"),
-        onStatus: (status) => print("Speech recognition status: \$status"),
+        onError: (error) => debugPrint("Speech recognition error: \$error"),
+        onStatus: (status) => debugPrint("Speech recognition status: \$status"),
       );
     }
     return _isInitialized;

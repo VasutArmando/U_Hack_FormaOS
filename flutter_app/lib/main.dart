@@ -33,8 +33,7 @@ class FormaOSApp extends StatelessWidget {
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFF00FFCC), // Accent neon cyan
           secondary: Color(0xFFFF00FF), // Accent neon magenta
-          surface: Color(0xFF1E1E1E), // Gri închis pentru carduri
-          background: Color(0xFF121212),
+          surface: Color(0xFF1E1E1E),
         ),
         navigationRailTheme: const NavigationRailThemeData(
           backgroundColor: Color(0xFF181818),

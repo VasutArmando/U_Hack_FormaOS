@@ -182,7 +182,7 @@ class PitchPainter extends CustomPainter {
     final paint = Paint()..color = const Color(0xFF1B1B1B)..style = PaintingStyle.fill;
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
     
-    final linePaint = Paint()..color = Colors.white.withOpacity(0.5)..strokeWidth = 2.0..style = PaintingStyle.stroke;
+    final linePaint = Paint()..color = Colors.white.withValues(alpha: 0.5)..strokeWidth = 2.0..style = PaintingStyle.stroke;
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), linePaint);
     canvas.drawLine(Offset(size.width / 2, 0), Offset(size.width / 2, size.height), linePaint);
     canvas.drawCircle(Offset(size.width / 2, size.height / 2), 9.15 * scaleX, linePaint);
@@ -190,7 +190,7 @@ class PitchPainter extends CustomPainter {
 
   void _drawWatermark(Canvas canvas, Size size) {
     final textPainter = TextPainter(
-      text: TextSpan(text: 'U', style: TextStyle(color: Colors.white.withOpacity(0.03), fontSize: size.height * 0.7, fontWeight: FontWeight.w900, fontFamily: 'serif')),
+      text: TextSpan(text: 'U', style: TextStyle(color: Colors.white.withValues(alpha: 0.03), fontSize: size.height * 0.7, fontWeight: FontWeight.w900, fontFamily: 'serif')),
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
@@ -211,7 +211,7 @@ class PitchPainter extends CustomPainter {
 
   void _drawMarkedZone(Canvas canvas, double scaleX, double scaleY, Offset zone) {
     final paint = Paint()..color = const Color(0xFFD4AF37)..style = PaintingStyle.stroke..strokeWidth = 3.0;
-    final fillPaint = Paint()..color = const Color(0xFFD4AF37).withOpacity(0.2)..style = PaintingStyle.fill;
+    final fillPaint = Paint()..color = const Color(0xFFD4AF37).withValues(alpha: 0.2)..style = PaintingStyle.fill;
     final center = Offset(zone.dx / scaleX, zone.dy / scaleY);
     
     canvas.drawCircle(center, 12.0 / scaleX, fillPaint);

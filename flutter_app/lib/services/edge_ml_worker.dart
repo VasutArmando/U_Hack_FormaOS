@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 
 /// Serviciu Edge ML (Web Worker / Isolate) pentru rularea inferențelor
 /// Computer Vision (MediaPipe) direct pe device-ul Flutter.

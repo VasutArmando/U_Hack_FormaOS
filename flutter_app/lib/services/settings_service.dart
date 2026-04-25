@@ -13,8 +13,9 @@ class SettingsService {
     required String? stadiumId,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    if (nextOpponentId != null)
+    if (nextOpponentId != null) {
       await prefs.setString(_keyNextOpponentId, nextOpponentId);
+    }
     if (gameDate != null) await prefs.setString(_keyGameDate, gameDate);
     if (matchTime != null) await prefs.setString(_keyMatchTime, matchTime);
     if (stadiumId != null) await prefs.setString(_keyStadiumId, stadiumId);

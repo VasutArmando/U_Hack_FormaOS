@@ -5,7 +5,7 @@ import '../repositories/data_repository.dart';
 import '../widgets/football_pitch.dart';
 
 class PregameScreen extends StatefulWidget {
-  const PregameScreen({Key? key}) : super(key: key);
+  const PregameScreen({super.key});
 
   @override
   State<PregameScreen> createState() => _PregameScreenState();
@@ -224,7 +224,7 @@ class _PregameScreenState extends State<PregameScreen> {
           if (selected) _weaknessFilter = label;
         });
       },
-      selectedColor: const Color(0xFF00FFCC).withOpacity(0.3),
+      selectedColor: const Color(0xFF00FFCC).withValues(alpha: 0.3),
       backgroundColor: Colors.white10,
       labelStyle: TextStyle(color: _weaknessFilter == label ? const Color(0xFF00FFCC) : Colors.white),
     );

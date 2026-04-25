@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../main.dart';
 import '../models/match_data.dart';
 import '../repositories/data_repository.dart';
@@ -6,7 +8,7 @@ import '../widgets/football_pitch.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class InGameScreen extends StatefulWidget {
-  const InGameScreen({Key? key}) : super(key: key);
+  const InGameScreen({super.key});
 
   @override
   State<InGameScreen> createState() => _InGameScreenState();
@@ -198,14 +200,14 @@ class _InGameScreenState extends State<InGameScreen> {
 }
 
 class AssistantTab extends StatefulWidget {
-  const AssistantTab({Key? key}) : super(key: key);
+  const AssistantTab({super.key});
 
   @override
   State<AssistantTab> createState() => _AssistantTabState();
 }
 
 class _AssistantTabState extends State<AssistantTab> {
-  stt.SpeechToText _speech = stt.SpeechToText();
+  final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
   String _recognizedText = "Tap the microphone to start asking questions.";
   String _assistantResponse = "";
@@ -218,8 +220,8 @@ class _AssistantTabState extends State<AssistantTab> {
 
   void _initSpeech() async {
     await _speech.initialize(
-      onError: (val) => print('onError: $val'),
-      onStatus: (val) => print('onStatus: $val'),
+      onError: (val) => debugPrint('onError: $val'),
+      onStatus: (val) => debugPrint('onStatus: $val'),
     );
   }
 
@@ -228,8 +230,8 @@ class _AssistantTabState extends State<AssistantTab> {
       bool available = _speech.isAvailable;
       if (!available) {
         available = await _speech.initialize(
-          onError: (val) => print('onError: $val'),
-          onStatus: (val) => print('onStatus: $val'),
+          onError: (val) => debugPrint('onError: $val'),
+          onStatus: (val) => debugPrint('onStatus: $val'),
         );
       }
       
@@ -271,36 +273,32 @@ class _AssistantTabState extends State<AssistantTab> {
   void _processVoiceQuery(String query) async {
     if (query.isEmpty || query == "listening...") return;
 
-    final repository = getIt<DataRepository>();
-    final players = await repository.getIngamePlayers();
-
-    String response = "I didn't quite catch that. Try asking about a player's fatigue.";
-
-    if (query.contains("fatigue") || query.contains("player")) {
-      // Find numbers in query
-      RegExp regExp = RegExp(r'\d+');
-      Match? match = regExp.firstMatch(query);
-
-      if (match != null) {
-        String number = match.group(0)!;
-        var foundPlayer = players.where((p) => p.name.contains(number)).firstOrNull;
-        
-        if (foundPlayer != null) {
-          response = "Based on live data, ${foundPlayer.name} is currently at ${foundPlayer.fatigue}% fatigue. ${foundPlayer.liveRemark}";
-        } else {
-          response = "I couldn't find data for player $number on the pitch right now.";
-        }
-      } else {
-        // Just return the most fatigued player
-        players.sort((a, b) => b.fatigue.compareTo(a.fatigue));
-        var mostFatigued = players.first;
-        response = "The most fatigued player right now is ${mostFatigued.name} at ${mostFatigued.fatigue}%. ${mostFatigued.liveRemark}";
-      }
-    }
-
     setState(() {
-      _assistantResponse = response;
+      _assistantResponse = "Analizez comanda tactică...";
     });
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://127.0.0.1:8000/api/v1/ingame/assistant'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'query': query}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _assistantResponse = data['advice'] ?? "Niciun sfat returnat.";
+        });
+      } else {
+        setState(() {
+          _assistantResponse = "Eroare AI Backend: ${response.statusCode}";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _assistantResponse = "Conexiune backend eșuată! Pornește Uvicorn pe portul 8000.";
+      });
+    }
   }
 
   @override
@@ -325,7 +323,7 @@ class _AssistantTabState extends State<AssistantTab> {
               decoration: BoxDecoration(
                 color: const Color(0xFF1E1E1E),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF00FFCC).withOpacity(0.3)),
+                border: Border.all(color: const Color(0xFF00FFCC).withValues(alpha: 0.3)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -25,6 +25,7 @@
         "web_socket_channel"
       ],
       "devDependencies": [
+        "flutter_lints",
         "flutter_test"
       ]
     },
@@ -44,6 +45,13 @@
         "stream_channel",
         "test_api",
         "vector_math"
+      ]
+    },
+    {
+      "name": "flutter_lints",
+      "version": "6.0.0",
+      "dependencies": [
+        "lints"
       ]
     },
     {
@@ -301,6 +309,11 @@
         "string_scanner",
         "term_glyph"
       ]
+    },
+    {
+      "name": "lints",
+      "version": "6.1.0",
+      "dependencies": []
     },
     {
       "name": "shared_preferences_windows",

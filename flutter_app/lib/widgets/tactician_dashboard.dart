@@ -84,7 +84,7 @@ class _TacticianDashboardState extends State<TacticianDashboard> {
             const SizedBox(height: 20),
             Text(
               "ASISTENT TACTIC (VOICE-FIRST)",
-              style: TextStyle(color: Colors.white.withOpacity(0.7), letterSpacing: 2.0, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7), letterSpacing: 2.0, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),
             
@@ -92,7 +92,7 @@ class _TacticianDashboardState extends State<TacticianDashboard> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: _isListening ? Colors.redAccent : Colors.white12)
               ),
@@ -117,7 +117,7 @@ class _TacticianDashboardState extends State<TacticianDashboard> {
                   shape: BoxShape.circle,
                   color: _isListening ? Colors.redAccent : Colors.blueAccent,
                   boxShadow: _isListening ? [
-                    BoxShadow(color: Colors.redAccent.withOpacity(0.6), blurRadius: 30, spreadRadius: 10)
+                    BoxShadow(color: Colors.redAccent.withValues(alpha: 0.6), blurRadius: 30, spreadRadius: 10)
                   ] : [],
                 ),
                 child: const Icon(Icons.mic, color: Colors.white, size: 50),
@@ -149,7 +149,7 @@ class _TacticianDashboardState extends State<TacticianDashboard> {
                       Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.amberAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(color: Colors.amberAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -186,7 +186,7 @@ class _TacticianDashboardState extends State<TacticianDashboard> {
                 margin: const EdgeInsets.only(top: 20),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blueAccent.withOpacity(0.15),
+                  color: Colors.blueAccent.withValues(alpha: 0.15),
                   border: Border.all(color: Colors.blueAccent, width: 2),
                   borderRadius: BorderRadius.circular(12)
                 ),
@@ -206,7 +206,7 @@ class _TacticianDashboardState extends State<TacticianDashboard> {
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
                       onPressed: () async {
                          final result = await context.read<MatchCubit>().simulateSubstitution("9", "17");
-                         if (mounted) {
+                         if (context.mounted) {
                            showDialog(context: context, builder: (_) => AlertDialog(
                               backgroundColor: const Color(0xFF1B1B1B),
                               title: const Text("ORACLE: Simulare Teritorială", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

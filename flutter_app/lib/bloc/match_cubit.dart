@@ -194,6 +194,7 @@ class MatchCubit extends Cubit<MatchState> {
     _firestoreSub?.cancel();
     _wsSub?.cancel();
     _connectivitySub?.cancel();
+    _workerAlertSub?.cancel();
     wsService.dispose();
     return super.close();
   }

@@ -47,7 +47,7 @@ class ShieldDashboard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border(left: BorderSide(color: color, width: 4)),
         boxShadow: [
-          BoxShadow(color: color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(color: color.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4))
         ]
       ),
       child: Column(
@@ -66,7 +66,7 @@ class ShieldDashboard extends StatelessWidget {
       RadarChartData(
         dataSets: [
           RadarDataSet(
-            fillColor: Colors.blueAccent.withOpacity(0.15),
+            fillColor: Colors.blueAccent.withValues(alpha: 0.15),
             borderColor: Colors.blueAccent,
             entryRadius: 4,
             dataEntries: const [
@@ -78,7 +78,7 @@ class ShieldDashboard extends StatelessWidget {
             ],
           ),
           RadarDataSet(
-            fillColor: Colors.redAccent.withOpacity(0.35),
+            fillColor: Colors.redAccent.withValues(alpha: 0.35),
             borderColor: Colors.redAccent,
             entryRadius: 4,
             dataEntries: const [
@@ -108,8 +108,8 @@ class ShieldDashboard extends StatelessWidget {
         },
         titleTextStyle: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12),
       ),
-      swapAnimationDuration: const Duration(milliseconds: 600),
-      swapAnimationCurve: Curves.easeOutBack,
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutBack,
     );
   }
 }
