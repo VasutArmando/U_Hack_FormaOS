@@ -67,6 +67,12 @@ def _gsp_tag_url(slug: str) -> str:
 
 def _team_to_gsp_slug(team_name: str) -> Optional[str]:
     """Map known Romanian team names to their GSP tag slugs."""
+    import unicodedata
+    
+    def _to_ascii(s):
+        if not s: return ""
+        return "".join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn').lower()
+
     mapping = {
         "CFR Cluj": "cfr-cluj-11098",
         "Universitatea Cluj": "universitatea-cluj-27218",
@@ -82,13 +88,33 @@ def _team_to_gsp_slug(team_name: str) -> Optional[str]:
         "Botosani": "fc-botosani-22014",
         "Csikszereda Miercurea Ciuc": "csikszereda-miercurea-ciuc-32156",
         "Unirea Slobozia": "unirea-slobozia-22015",
-        "Arges": "fc-arges-22013",
-        "FCS Bucuresti": "fcs-voluntari-22012",
+        "FCS Bucuresti": "fcsb-11103",
+        "Sepsi OSK": "sepsi-osk-sfantu-gheorghe-30335",
+        "Poli Iasi": "politehnica-iasi-11105",
+        "FC Voluntari": "fc-voluntari-22012",
+        "FCU 1948 Craiova": "fc-u-craiova-34444",
+        "Gloria Buzau": "gloria-buzau-11101",
+        "Chindia Targoviste": "chindia-targoviste-27221",
+        "CS Mioveni": "cs-mioveni-11111",
+        "FC Arges": "fc-arges-22013",
+        "FC Bihor": "fc-bihor-oradea-11112",
+        "Concordia Chiajna": "concordia-chiajna-22011"
     }
-    # Normalize for lookup
+    
+    clean_target = _to_ascii(team_name)
+    
+    # Try exact match (normalized)
     for key, slug in mapping.items():
-        if key.lower() in team_name.lower() or team_name.lower() in key.lower():
+        clean_key = _to_ascii(key)
+        if clean_key == clean_target:
             return slug
+            
+    # Try partial match (normalized)
+    for key, slug in mapping.items():
+        clean_key = _to_ascii(key)
+        if clean_key in clean_target or clean_target in clean_key:
+            return slug
+            
     return None
 
 

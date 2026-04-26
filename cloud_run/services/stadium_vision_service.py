@@ -2,13 +2,13 @@ import os
 import json
 import asyncio
 import random
-import google.generativeai as genai
+import google.genai as genai
+from google.genai import types as genai_types
 from typing import Dict, Any, List
 from .observer_pattern import Subject
 
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
-if GOOGLE_API_KEY:
-    genai.configure(api_key=GOOGLE_API_KEY)
+_genai_client = genai.Client(api_key=GOOGLE_API_KEY) if GOOGLE_API_KEY else None
 
 class StadiumVisionService(Subject):
     """
@@ -26,9 +26,11 @@ class StadiumVisionService(Subject):
     async def start_camera_stream(self):
         self.is_running = True
         while self.is_running:
-            # Simulează preluarea unui frame la fiecare 10 secunde
-            await asyncio.sleep(10)
-            self._process_frame_with_vertex_ai()
+            # Simulează preluarea unui frame la fiecare 15 secunde (mărim intervalul pentru hackathon)
+            await asyncio.sleep(15)
+            if self.is_running:
+                # Folosim to_thread pentru a NU bloca event loop-ul FastAPI cu apelul Gemini
+                await asyncio.to_thread(self._process_frame_with_vertex_ai)
 
     def stop_camera_stream(self):
         self.is_running = False
@@ -48,8 +50,14 @@ Prioritizează interstițiile pentru contraatac."""
             return
             
         try:
-            model = genai.GenerativeModel("gemini-2.5-flash") # Folosim flash ca placeholder pt vision în hackathon
-            response = model.generate_content(prompt)
+            if not _genai_client:
+                self._apply_fallback_vision()
+                return
+
+            response = _genai_client.models.generate_content(
+                model="gemini-2.5-flash", 
+                contents=prompt,
+            )
             text = response.text.strip()
             
             if text.startswith("```json"): text = text[7:]

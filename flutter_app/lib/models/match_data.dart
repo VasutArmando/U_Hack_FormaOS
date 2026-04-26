@@ -141,12 +141,18 @@ class LivePlayerFatigue {
   final String name;
   final double fatigue;
   final String liveRemark;
+  final double weight; // in kg
+  final String position;
+  final bool isStartingXI;
 
   LivePlayerFatigue({
     required this.id,
     required this.name,
     required this.fatigue,
     required this.liveRemark,
+    this.weight = 75.0,
+    this.position = 'Unknown',
+    this.isStartingXI = false,
   });
 
   factory LivePlayerFatigue.fromJson(Map<String, dynamic> json) {
@@ -155,6 +161,9 @@ class LivePlayerFatigue {
       name: json['name'] ?? 'Unknown',
       fatigue: (json['fatigue'] ?? 0).toDouble(),
       liveRemark: json['live_remark'] ?? '',
+      weight: (json['weight'] ?? 75.0).toDouble(),
+      position: json['position'] ?? 'Unknown',
+      isStartingXI: json['isStartingXI'] ?? false,
     );
   }
 }

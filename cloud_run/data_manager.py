@@ -14,7 +14,7 @@ from services.scraper import scrape_opponent_news
 from services.news_cache import get_or_fetch
 from services.stadium_vision_service import vision_pipeline
 
-logger = logging.getLogger("forma_os_data")
+logger = logging.getLogger("uvicorn")
 
 # 1. Abstracție - Data Provider Pattern (Arhitectură pentru Baze de Date Open-Source)
 class DataProvider(ABC):
@@ -245,7 +245,7 @@ class LocalFilesProvider(DataProvider, Observer):
         self._players_mapping_cache = None
         self._players_role_cache = None
         self._players_birth_cache = None
-        self.data_dir = r"E:\U_Hack_FormaOS-1\Data_Fixed\Date - meciuri"
+        self.data_dir = str(Path(__file__).parent.parent / "Data_Fixed" / "Date - meciuri")
 
     def update(self, event_type: str, data: Any):
         if event_type == "VISION_UPDATE":
@@ -253,9 +253,23 @@ class LocalFilesProvider(DataProvider, Observer):
             self.live_vision_fatigue = data.get("fatigue_metrics", {})
             self.fallback_db.update(event_type, data)
             
-    def _clean_id(self, name):
+    def _super_clean(self, name):
+        if not name: return ""
+        if not isinstance(name, str): name = str(name)
+        # 1. Fix possible double encoding (common in hackathon datasets)
+        # If string contains double-encoded UTF-8 chars seen as Latin-1
+        if any(c in name for c in ["Ì", "¦", "§", "©", "ª"]):
+            try:
+                # Attempt to recover from double-encoding
+                name = name.encode('latin-1').decode('utf-8')
+            except Exception:
+                pass
+        
+        # 2. Normalize and strip diacritics
+        name = unicodedata.normalize('NFKD', name).encode('ASCII', 'ignore').decode('utf-8')
+        
+        # 3. Final cleaning
         clean = name.lower()
-        clean = clean.replace('ș', 's').replace('ț', 't').replace('ş', 's').replace('ţ', 't')
         clean = "".join([c for c in clean if c.isalnum() or c == ' ']).strip()
         return clean.replace(' ', '_')
 
@@ -281,8 +295,8 @@ class LocalFilesProvider(DataProvider, Observer):
                         for p in data['players']:
                             pid = str(p.get('wyId', ''))
                             name = p.get('shortName') or f"{p.get('firstName', '')} {p.get('lastName', '')}".strip()
-                            # NFC-normalize teamname to fix composed vs decomposed char mismatch
-                            teamname = self._nfc(p.get('teamname', 'Unknown'))
+                            # Use super_clean to avoid encoding/diacritic mismatches
+                            teamname = self._super_clean(p.get('teamname', 'Unknown'))
                             role = p.get('role', {}).get('name', '') if isinstance(p.get('role'), dict) else ''
                             birth_country = p.get('birthArea', {}).get('name', 'Unknown') if isinstance(p.get('birthArea'), dict) else 'Unknown'
                             if pid and name:
@@ -325,12 +339,20 @@ class LocalFilesProvider(DataProvider, Observer):
                 if not match_id or match_id == 'None':
                     continue
                     
-                name_part = filename.split(',')[0]
-                teams_split = name_part.split(' - ')
+                # Robust parsing: remove suffix first
+                name_part = filename.replace('_players_stats.json', '')
+                # name_part is e.g. "Argeș - FCS Bucures,ti, 1-0"
+                # Split by the LAST comma to separate teams from the score
+                if ',' in name_part:
+                    teams_part = name_part.rsplit(',', 1)[0] # "Argeș - FCS Bucures,ti"
+                else:
+                    teams_part = name_part
+                    
+                teams_split = teams_part.split(' - ')
                 if len(teams_split) == 2:
-                    # NFC-normalize to fix combining vs precomposed diacritic mismatch
-                    team1 = self._nfc(teams_split[0].strip())
-                    team2 = self._nfc(teams_split[1].strip())
+                    # Use super_clean for filenames as well
+                    team1 = self._super_clean(teams_split[0].strip())
+                    team2 = self._super_clean(teams_split[1].strip())
                 else:
                     team1, team2 = "Unknown", "Unknown"
                     
@@ -355,18 +377,16 @@ class LocalFilesProvider(DataProvider, Observer):
                     if isinstance(known_data, dict):
                         known_data = known_data.get("teams", [])
                     for t in known_data:
-                        known_teams[self._clean_id(t['name'])] = t['id']
+                        known_teams[self._super_clean(t['name'])] = t['id']
             
             for team_name in team_names:
-                # Folosim unicodedata pentru a elimina caracterele diacritice (inclusiv cele compuse)
-                clean_team_name = unicodedata.normalize('NFKD', team_name).encode('ASCII', 'ignore').decode('utf-8')
-                c_name = self._clean_id(clean_team_name)
+                c_name = self._super_clean(team_name)
                 team_id = known_teams.get(c_name, c_name)
                 if 'fcs' in c_name and 'fcsb' in known_teams: team_id = known_teams['fcsb']
                 elif 'dinamo' in c_name and 'dinamo_bucuresti' in known_teams: team_id = known_teams['dinamo_bucuresti']
                 elif 'rapid' in c_name and 'rapid_bucuresti' in known_teams: team_id = known_teams['rapid_bucuresti']
                 
-                display_name = clean_team_name
+                display_name = team_name
                 
                 teams_list.append({
                     'id': team_id,
@@ -407,8 +427,8 @@ class LocalFilesProvider(DataProvider, Observer):
         self._parse_local_files()
         self._parse_players_mapping()
         
-        # NFC-normalize opponent_name so it matches keys in matches_dict and _players_team_cache
-        opponent_name_nfc = self._nfc(opponent_name)
+        # Use super_clean to ensure matching regardless of diacritics or encoding
+        opponent_name_clean = self._super_clean(opponent_name)
         
         # Fetch match-day weather (if stadium + date provided)
         match_weather = None
@@ -419,10 +439,10 @@ class LocalFilesProvider(DataProvider, Observer):
         if opponent_id and self._matches_cache:
             opponent_matches = []
             for match_id, match_data in self._matches_cache.items():
-                if match_data.get('team1') == opponent_name_nfc or match_data.get('team2') == opponent_name_nfc:
+                if match_data.get('team1') == opponent_name_clean or match_data.get('team2') == opponent_name_clean:
                     opponent_matches.append(match_data)
             
-            logger.info(f"Found {len(opponent_matches)} matches for opponent '{opponent_name_nfc}'")
+            logger.info(f"Found {len(opponent_matches)} matches for opponent '{opponent_name_clean}'")
             
             if opponent_matches:
                 player_stats_agg = {}
@@ -432,7 +452,7 @@ class LocalFilesProvider(DataProvider, Observer):
                         pid = str(p.get('playerId', ''))
                         
                         # Filter: only keep players from the opponent team
-                        if self._players_team_cache.get(pid) != opponent_name_nfc:
+                        if self._players_team_cache.get(pid) != opponent_name_clean:
                             continue
                             
                         if pid not in player_stats_agg:

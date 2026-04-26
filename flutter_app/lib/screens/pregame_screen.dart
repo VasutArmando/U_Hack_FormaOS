@@ -5,6 +5,7 @@ import '../repositories/api_data_repository.dart';
 import '../repositories/data_repository.dart';
 import '../services/settings_service.dart';
 import '../widgets/football_pitch.dart';
+import '../widgets/assistant_tab.dart';
 
 class PregameScreen extends StatefulWidget {
   const PregameScreen({super.key});
@@ -73,7 +74,7 @@ class _PregameScreenState extends State<PregameScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -89,6 +90,7 @@ class _PregameScreenState extends State<PregameScreen> {
               tabs: [
                 Tab(icon: Icon(Icons.analytics), text: 'CHRONIC GAPS'),
                 Tab(icon: Icon(Icons.psychology), text: 'OPPONENT WEAKNESS'),
+                Tab(icon: Icon(Icons.mic), text: 'ASSISTANT'),
               ],
             ),
           ),
@@ -97,6 +99,7 @@ class _PregameScreenState extends State<PregameScreen> {
               children: [
                 _buildChronicGapsTab(),
                 _buildOpponentWeaknessTab(),
+                const AssistantTab(),
               ],
             ),
           ),
@@ -262,10 +265,37 @@ class _PregameScreenState extends State<PregameScreen> {
         }
 
         final allPlayers = snapshot.data ?? [];
+
+        if (allPlayers.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(48),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.psychology_outlined, size: 64, color: Colors.white.withOpacity(0.3)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No analysis data available.',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Go to Settings, select an opponent, and press SAVE to run the AI analysis.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         // Apply filter
         final players = _weaknessFilter == 'Climate Risk'
             ? allPlayers.where((p) => p.climateDanger == 'High' || p.climateDanger == 'Medium').toList()
             : allPlayers;
+
 
         return Padding(
           padding: const EdgeInsets.all(24.0),

@@ -9,7 +9,7 @@ requests
 websockets
 slowapi
 pybreaker
-google-generativeai
+google-genai
 python-dotenv
 beautifulsoup4
 lxml

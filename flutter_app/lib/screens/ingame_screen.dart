@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:async';
 import '../main.dart';
 import '../models/match_data.dart';
 import '../repositories/data_repository.dart';
+import '../services/settings_service.dart';
+import '../widgets/assistant_tab.dart';
 import '../widgets/football_pitch.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class InGameScreen extends StatefulWidget {
   const InGameScreen({super.key});
@@ -15,10 +15,120 @@ class InGameScreen extends StatefulWidget {
 }
 
 class _InGameScreenState extends State<InGameScreen> {
+  final _settingsService = getIt<SettingsService>();
+  DateTime? _matchStartTime;
+  int _currentMinute = 0;
+  Timer? _timer;
+  List<LivePlayerFatigue> _players = [];
+  bool _isLoadingPlayers = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMatchSettings();
+    _startMinuteTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadMatchSettings() async {
+    final settings = await _settingsService.loadSettings();
+    if (settings['gameDate'] != null) {
+      try {
+        final dt = DateTime.parse(settings['gameDate']!);
+        int hour = 20, minute = 45;
+        if (settings['matchTime'] != null) {
+          final parts = settings['matchTime']!.split(':');
+          if (parts.length == 2) {
+            hour = int.tryParse(parts[0]) ?? 20;
+            minute = int.tryParse(parts[1]) ?? 45;
+          }
+        }
+        setState(() {
+          _matchStartTime = DateTime(dt.year, dt.month, dt.day, hour, minute);
+          _updateMatchMinute();
+        });
+      } catch (_) {}
+    }
+    
+    // Load players once
+    try {
+      final repository = getIt<DataRepository>();
+      final players = await repository.getIngamePlayers();
+      setState(() {
+        _players = players;
+        _isLoadingPlayers = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingPlayers = false);
+    }
+  }
+
+  void _startMinuteTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted) {
+        setState(() {
+          _updateMatchMinute();
+        });
+      }
+    });
+  }
+
+  void _updateMatchMinute() {
+    if (_matchStartTime == null) return;
+    final now = DateTime.now();
+    if (now.isBefore(_matchStartTime!)) {
+      _currentMinute = 0;
+    } else {
+      _currentMinute = now.difference(_matchStartTime!).inMinutes;
+      if (_currentMinute > 95) _currentMinute = 95; // Clamp for demo
+    }
+  }
+
+  double _calculatePlayerFatigue(LivePlayerFatigue player, int minute) {
+    if (!player.isStartingXI) return 0.0;
+    if (minute <= 0) return 0.0;
+    
+    // Parse position from name if not provided in model (e.g. "Name (CM)")
+    String pos = player.position;
+    if (pos == 'Unknown') {
+      final match = RegExp(r'\((.*?)\)').firstMatch(player.name);
+      if (match != null) {
+        pos = match.group(1) ?? 'Unknown';
+      }
+    }
+
+    double positionFactor = 1.0;
+    pos = pos.toUpperCase();
+    if (pos.contains('GK')) positionFactor = 0.15;
+    else if (pos.contains('CB')) positionFactor = 0.75;
+    else if (pos.contains('LB') || pos.contains('RB') || pos.contains('WB')) positionFactor = 1.15;
+    else if (pos.contains('CM') || pos.contains('DM') || pos.contains('AM')) positionFactor = 1.35;
+    else if (pos.contains('LW') || pos.contains('RW') || pos.contains('ST')) positionFactor = 1.05;
+
+    double weightFactor = player.weight / 75.0;
+    
+    // Base fatigue: ~0.85% per minute for standard player
+    double fatigue = minute * 0.85 * positionFactor * weightFactor;
+    
+    return fatigue.clamp(0.0, 100.0);
+  }
+
+  String _getFatigueRemark(double fatigue, String pos) {
+    if (fatigue < 30) return "Fresh and highly energetic. High pressing intensity.";
+    if (fatigue < 60) return "Moderate fatigue. Maintaining tactical discipline.";
+    if (fatigue < 80) return "Noticeable drop in sprint volume. Vulnerable to fast transitions.";
+    return "Critical exhaustion. Reaction time and positional awareness severely compromised.";
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -31,7 +141,6 @@ class _InGameScreenState extends State<InGameScreen> {
               unselectedLabelColor: Colors.white54,
               labelStyle: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2),
               tabs: [
-                Tab(icon: Icon(Icons.analytics), text: 'LIVE GAPS'),
                 Tab(icon: Icon(Icons.battery_alert), text: 'OPPONENT WEAKNESS'),
                 Tab(icon: Icon(Icons.mic), text: 'ASSISTANT'),
               ],
@@ -40,9 +149,21 @@ class _InGameScreenState extends State<InGameScreen> {
           Expanded(
             child: TabBarView(
               children: [
-                _buildLiveGapsTab(),
                 _buildOpponentWeaknessTab(),
-                const AssistantTab(),
+                AssistantTab(
+                  liveFatigue: _players.map((p) {
+                    // Create a copy with updated fatigue for the AI
+                    return LivePlayerFatigue(
+                      id: p.id,
+                      name: p.name,
+                      fatigue: _calculatePlayerFatigue(p, _currentMinute),
+                      liveRemark: p.liveRemark,
+                      weight: p.weight,
+                      position: p.position,
+                      isStartingXI: p.isStartingXI,
+                    );
+                  }).toList(),
+                ),
               ],
             ),
           ),
@@ -51,309 +172,163 @@ class _InGameScreenState extends State<InGameScreen> {
     );
   }
 
-  Widget _buildLiveGapsTab() {
-    final repository = getIt<DataRepository>();
-    return FutureBuilder<List<TacticalGap>>(
-      future: repository.getIngameGaps(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFF00FFCC)));
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
-        }
-        
-        final gaps = snapshot.data ?? [];
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('LIVE CHRONIC GAPS', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 24),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: _buildPitchVisualization(gaps),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    flex: 2,
-                    child: _buildGapsList(gaps),
-                  ),
-                ],
-              )
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPitchVisualization(List<TacticalGap> gaps) {
-    return SizedBox(
-      height: 400,
-      child: FootballPitch(gaps: gaps),
-    );
-  }
-
-  Widget _buildGapsList(List<TacticalGap> gaps) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: gaps.length,
-      itemBuilder: (context, index) {
-        final gap = gaps[index];
-        return Card(
-          color: const Color(0xFF1E1E1E),
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(gap.location, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                    Chip(
-                      label: Text(gap.severity, style: const TextStyle(fontSize: 10, color: Colors.white)),
-                      backgroundColor: gap.severity == 'Critical' ? Colors.red : Colors.orange,
-                    )
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(gap.description, style: const TextStyle(color: Colors.white70)),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildOpponentWeaknessTab() {
-    final repository = getIt<DataRepository>();
-    return FutureBuilder<List<LivePlayerFatigue>>(
-      future: repository.getIngamePlayers(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFF00FFCC)));
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
-        }
-        
-        final players = snapshot.data ?? [];
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('LIVE PLAYER FATIGUE', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 24),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: players.length,
-                  itemBuilder: (context, index) {
-                    final player = players[index];
-                    Color fatigueColor = Colors.green;
-                    if (player.fatigue > 60) fatigueColor = Colors.orange;
-                    if (player.fatigue > 80) fatigueColor = Colors.red;
-
-                    return Card(
-                      color: const Color(0xFF1E1E1E),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(player.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
-                                Text('${player.fatigue}% Fatigue', style: TextStyle(color: fatigueColor, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            LinearProgressIndicator(
-                              value: player.fatigue / 100,
-                              backgroundColor: Colors.white10,
-                              valueColor: AlwaysStoppedAnimation<Color>(fatigueColor),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(player.liveRemark, style: const TextStyle(color: Colors.white70)),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class AssistantTab extends StatefulWidget {
-  const AssistantTab({super.key});
-
-  @override
-  State<AssistantTab> createState() => _AssistantTabState();
-}
-
-class _AssistantTabState extends State<AssistantTab> {
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _isListening = false;
-  String _recognizedText = "Tap the microphone to start asking questions.";
-  String _assistantResponse = "";
-
-  @override
-  void initState() {
-    super.initState();
-    _initSpeech();
-  }
-
-  void _initSpeech() async {
-    await _speech.initialize(
-      onError: (val) => debugPrint('onError: $val'),
-      onStatus: (val) => debugPrint('onStatus: $val'),
-    );
-  }
-
-  void _toggleListening() async {
-    if (!_isListening) {
-      bool available = _speech.isAvailable;
-      if (!available) {
-        available = await _speech.initialize(
-          onError: (val) => debugPrint('onError: $val'),
-          onStatus: (val) => debugPrint('onStatus: $val'),
-        );
-      }
-      
-      if (available) {
-        setState(() {
-          _isListening = true;
-          _recognizedText = "Listening...";
-          _assistantResponse = "";
-        });
-        _speech.listen(
-          onResult: (val) {
-            setState(() {
-              // Only update if it actually recognized something
-              if (val.recognizedWords.isNotEmpty) {
-                _recognizedText = val.recognizedWords;
-              }
-            });
-          },
-        );
-      } else {
-        setState(() {
-          _isListening = false;
-          _recognizedText = "Speech recognition is not available on this device.";
-        });
-      }
-    } else {
-      _speech.stop();
-      setState(() {
-        _isListening = false;
-        // Fallback for hackathon presentation if mic failed to pick up on Windows/Emulator
-        if (_recognizedText == "Listening..." || _recognizedText.isEmpty) {
-           _recognizedText = "what is the fatigue of player 9";
-        }
-      });
-      _processVoiceQuery(_recognizedText.toLowerCase());
+    if (_isLoadingPlayers) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF00FFCC)));
     }
-  }
-
-  void _processVoiceQuery(String query) async {
-    if (query.isEmpty || query == "listening...") return;
-
-    setState(() {
-      _assistantResponse = "Analizez comanda tactică...";
+    
+    final players = List<LivePlayerFatigue>.from(_players);
+    
+    // Sort players: Starting XI first
+    players.sort((a, b) {
+      if (a.isStartingXI && !b.isStartingXI) return -1;
+      if (!a.isStartingXI && b.isStartingXI) return 1;
+      return 0;
     });
 
-    try {
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/v1/ingame/assistant'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'query': query}),
+    if (players.isEmpty) {
+      return const Center(
+        child: Text('No players found for the selected opponent.', 
+            style: TextStyle(color: Colors.white70, fontSize: 16)),
       );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _assistantResponse = data['advice'] ?? "Niciun sfat returnat.";
-        });
-      } else {
-        setState(() {
-          _assistantResponse = "Eroare AI Backend: ${response.statusCode}";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _assistantResponse = "Conexiune backend eșuată! Pornește Uvicorn pe portul 8000.";
-      });
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.record_voice_over, size: 80, color: _isListening ? Colors.redAccent : const Color(0xFF00FFCC)),
-          const SizedBox(height: 32),
-          Text(
-            _recognizedText,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 20, color: Colors.white, fontStyle: FontStyle.italic),
-          ),
-          const SizedBox(height: 32),
-          if (_assistantResponse.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF00FFCC).withValues(alpha: 0.3)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('LIVE PLAYER FATIGUE', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00FFCC).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF00FFCC).withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  'MINUTE $_currentMinute\'',
+                  style: const TextStyle(color: Color(0xFF00FFCC), fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.smart_toy, color: Color(0xFF00FFCC)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      _assistantResponse,
-                      style: const TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: ListView.builder(
+              itemCount: players.length,
+              itemBuilder: (context, index) {
+                final player = players[index];
+                final calculatedFatigue = _calculatePlayerFatigue(player, _currentMinute);
+                
+                Color fatigueColor = Colors.green;
+                if (calculatedFatigue > 60) {
+                  fatigueColor = Colors.orange;
+                }
+                if (calculatedFatigue > 80) {
+                  fatigueColor = Colors.red;
+                }
+
+                final isCritical = calculatedFatigue > 80;
+                final isModerate = calculatedFatigue > 60 && calculatedFatigue <= 80;
+                final borderColor = isCritical
+                    ? Colors.redAccent.withValues(alpha: 0.7)
+                    : isModerate
+                        ? Colors.orangeAccent.withValues(alpha: 0.4)
+                        : Colors.transparent;
+
+                return Card(
+                  color: const Color(0xFF1E1E1E),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: borderColor, width: 1.5),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Text(player.name,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                          color: player.isStartingXI ? Colors.white : Colors.white54)),
+                                  if (player.isStartingXI)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white10,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Text('⭐ STARTING XI',
+                                            style: TextStyle(fontSize: 10, color: Colors.amber)),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (player.isStartingXI)
+                                  Text('${calculatedFatigue.toStringAsFixed(0)}% Fatigue',
+                                      style: TextStyle(
+                                          color: player.isStartingXI ? fatigueColor : Colors.white24,
+                                          fontWeight: FontWeight.bold))
+                                else
+                                  const Text('Bench / Sub',
+                                      style: TextStyle(
+                                          color: Colors.white24,
+                                          fontWeight: FontWeight.bold)),
+                                if (isCritical)
+                                  const Text('⚠️ CRITICAL EXHAUSTION',
+                                      style: TextStyle(color: Colors.redAccent, fontSize: 10)),
+                                if (isModerate)
+                                  const Text('⚠️ Moderate fatigue',
+                                      style: TextStyle(color: Colors.orangeAccent, fontSize: 10)),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const Divider(color: Colors.white10, height: 24),
+                        LinearProgressIndicator(
+                          value: calculatedFatigue / 100,
+                          backgroundColor: Colors.white10,
+                          valueColor: AlwaysStoppedAnimation<Color>(fatigueColor),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                const Icon(Icons.battery_alert, size: 18, color: Colors.orangeAccent),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                    child: Text(
+                                        player.isStartingXI ? _getFatigueRemark(calculatedFatigue, player.position) : "Currently on the bench. Ready if substituted.",
+                                        style: const TextStyle(color: Colors.white70),
+                                    ),
+                                ),
+                            ],
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          const Spacer(),
-          SizedBox(
-            width: 200,
-            height: 60,
-            child: ElevatedButton.icon(
-              onPressed: _toggleListening,
-              icon: Icon(_isListening ? Icons.stop : Icons.mic, color: Colors.black),
-              label: Text(_isListening ? 'Stop Listening' : 'Ask Question', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isListening ? Colors.redAccent : const Color(0xFF00FFCC),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              ),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 40),
         ],
       ),
     );

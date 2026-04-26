@@ -9,4 +9,5 @@ abstract class DataRepository {
   Future<List<LivePlayerFatigue>> getIngamePlayers();
   Future<List<TacticalGap>> getHalftimeGaps();
   Future<List<HalftimeChange>> getHalftimeChanges();
+  Future<String> askAssistant(String query, {String? opponentId, String? stadiumId, String? gameDate, List<Map<String, dynamic>>? liveFatigue});
 }
