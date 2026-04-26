@@ -419,3 +419,93 @@ def generate_pregame_intelligence_v2(
             profile["birth_country"] = original.get("birth_country", "Unknown")
 
     return profiles
+
+
+# ---------------------------------------------------------------------------
+# Chronic Gaps Generation
+# ---------------------------------------------------------------------------
+
+GAPS_PROMPT = """Ești Principal AI Analyst la echipa de fotbal U Cluj.
+
+ANALIZĂ DE VULNERABILITĂȚI JUCĂTORI PENTRU ADVERSARUL '{opponent}':
+{weakness_summary}
+
+ISTORIC MECIURI (rezumat):
+{matches_summary}
+
+SARCINĂ:
+Pe baza stării fizice/psihologice a jucătorilor și a tendințelor din meciurile trecute, identifică 1-3 GOLURI TACTICE CRONICE (Chronic Gaps) în așezarea sau jocul adversarului.
+Acestea pot fi flancuri vulnerabile, distanțe prea mari între linii, sau probleme la tranziția negativă.
+
+Pentru fiecare vulnerabilitate, trebuie să furnizezi o locație aproximativă (ex: "Left Flank", "Central Defensive Midfield") și coordonate spațiale aproximative pentru un teren de fotbal reprezentat ca un procent din ecran:
+- x: de la 0 (stânga) la 100 (dreapta)
+- y: de la 0 (sus) la 100 (jos)
+- w: lățimea zonei
+- h: înălțimea zonei
+(ex: x: 10.0, y: 30.0, w: 20.0, h: 40.0)
+
+Returnează EXCLUSIV JSON pur în formatul:
+[
+  {{
+    "id": "unique_gap_id",
+    "location": "Numele zonei vulnerabile",
+    "description": "Descrierea tactică detaliată a vulnerabilității (în ROMÂNĂ)",
+    "severity": "Critical|High|Medium",
+    "coordinates": {{"x": float, "y": float, "w": float, "h": float}}
+  }}
+]"""
+
+
+def generate_chronic_gaps(
+    opponent_name: str,
+    weakness_data: List[Dict[str, Any]],
+    matches_summary: str
+) -> List[Dict[str, Any]]:
+    if not GOOGLE_API_KEY:
+        # Fallback offline
+        return [{
+            "id": "gap_offline_1",
+            "location": "Flancul Stâng / Half Space",
+            "description": f"Date istorice arată o vulnerabilitate cronică pe flancul stâng pentru {opponent_name}.",
+            "severity": "High",
+            "coordinates": {"x": 20.0, "y": 20.0, "w": 30.0, "h": 60.0}
+        }]
+
+    # Slim down weakness data to save tokens
+    slim_weakness = []
+    for p in weakness_data:
+        slim_weakness.append({
+            "name": p.get("name", ""),
+            "score": p.get("overall_weakness_score", 0),
+            "physical": p.get("physical_state", ""),
+            "tactics": p.get("tactical_tendencies", "")
+        })
+    
+    prompt = GAPS_PROMPT.format(
+        opponent=opponent_name,
+        weakness_summary=json.dumps(slim_weakness, ensure_ascii=False)[:3000],
+        matches_summary=matches_summary[:2000]
+    )
+
+    try:
+        raw = _call_gemini(prompt)
+        gaps = json.loads(_clean_json(raw))
+        # Ensure Rect format compatibility
+        for gap in gaps:
+            coords = gap.get("coordinates", {})
+            gap["coordinates"] = {
+                "x": float(coords.get("x", 0)),
+                "y": float(coords.get("y", 0)),
+                "w": float(coords.get("w", 0)),
+                "h": float(coords.get("h", 0))
+            }
+        return gaps
+    except Exception as e:
+        logger.error(f"Chronic gaps extraction failed: {e}")
+        return [{
+            "id": "gap_error_1",
+            "location": "Unknown",
+            "description": "A apărut o eroare la generarea gap-urilor tactice. Monitorizați meciul live.",
+            "severity": "Medium",
+            "coordinates": {"x": 40.0, "y": 40.0, "w": 20.0, "h": 20.0}
+        }]

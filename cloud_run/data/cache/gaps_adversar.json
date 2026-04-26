@@ -1,0 +1,14 @@
+[
+  {
+    "id": "gap_offline_1",
+    "location": "Flancul Stâng / Half Space",
+    "description": "Date istorice arată o vulnerabilitate cronică pe flancul stâng pentru Adversar.",
+    "severity": "High",
+    "coordinates": {
+      "x": 20.0,
+      "y": 20.0,
+      "w": 30.0,
+      "h": 60.0
+    }
+  }
+]

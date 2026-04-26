@@ -420,7 +420,56 @@ class LocalFilesProvider(DataProvider, Observer):
         return self.fallback_db.get_live_gaps()
 
     def get_chronic_gaps(self, opponent_id: str = None) -> List[Dict[str, Any]]:
-        return self.fallback_db.get_chronic_gaps(opponent_id)
+        from services.news_cache import get_cached_gaps, set_cached_gaps, get_cached_profiles
+        from services.news_engine import generate_chronic_gaps
+
+        if not opponent_id:
+            return self.fallback_db.get_chronic_gaps(opponent_id)
+
+        self._parse_local_files()
+        
+        # Get opponent name
+        opponent_name = "Adversar"
+        for team in (self._teams_cache or []):
+            if team.get("id") == opponent_id:
+                opponent_name = team.get("name", "Adversar")
+                break
+                
+        opponent_name_clean = self._super_clean(opponent_name)
+
+        # 1. Check if we have cached gaps
+        cached_gaps = get_cached_gaps(opponent_name_clean)
+        if cached_gaps is not None:
+            logger.info(f"Returning cached chronic gaps for {opponent_name_clean}")
+            return cached_gaps
+
+        # 2. Get weakness data (cached profiles)
+        weakness_data = get_cached_profiles(opponent_name) or []
+        
+        # 3. Build match summary
+        matches_summary = ""
+        if self._matches_cache:
+            opponent_matches = []
+            for match_id, match_data in self._matches_cache.items():
+                if match_data.get('team1') == opponent_name_clean or match_data.get('team2') == opponent_name_clean:
+                    opponent_matches.append(match_data)
+            
+            if opponent_matches:
+                matches_summary = f"Am analizat {len(opponent_matches)} meciuri istorice. Adversarul {opponent_name} este predispus la dezechilibre in functie de performanta jucatorilor semnalati."
+            else:
+                matches_summary = "Nu există istoric de meciuri suficient."
+        else:
+            matches_summary = "Datele despre meciuri nu sunt disponibile."
+
+        # 4. Generate gaps
+        logger.info(f"Generating chronic gaps via Gemini for {opponent_name_clean}...")
+        gaps = generate_chronic_gaps(opponent_name, weakness_data, matches_summary)
+        
+        # 5. Cache and return
+        if gaps:
+            set_cached_gaps(opponent_name_clean, gaps)
+        
+        return gaps
 
     def get_opponent_weaknesses(self, opponent_id: str = None, opponent_name: str = "Adversar",
                                 stadium_id: str = None, game_date: str = None) -> List[Dict[str, Any]]:

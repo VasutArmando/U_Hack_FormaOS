@@ -168,3 +168,49 @@ def set_cached_profiles(team_key: str, profiles: list, game_date: Optional[str] 
     except Exception as e:
         logger.warning(f"Profiles cache write error for '{team_key}': {e}")
 
+
+# ---------------------------------------------------------------------------
+# Chronic Gaps Cache
+# ---------------------------------------------------------------------------
+
+GAPS_TTL_SECONDS = 86400  # 24 hours
+
+def _gaps_key(team_key: str, game_date: Optional[str] = None) -> str:
+    """Build a cache key with 'gaps_' prefix."""
+    return f"gaps_{_cache_key(team_key, game_date)}"
+
+
+def get_cached_gaps(team_key: str, game_date: Optional[str] = None) -> Optional[list]:
+    """Return cached chronic gaps if they exist and are fresh."""
+    _ensure_cache_dir()
+    cache_file = CACHE_DIR / f"{_gaps_key(team_key, game_date)}.json"
+
+    if not cache_file.exists():
+        return None
+
+    age = time.time() - cache_file.stat().st_mtime
+    if age > GAPS_TTL_SECONDS:
+        logger.info(f"Gaps cache expired for '{team_key}' ({age:.0f}s old)")
+        return None
+
+    try:
+        with open(cache_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        logger.info(f"Gaps cache HIT for '{team_key}' date={game_date} ({age:.0f}s old)")
+        return data
+    except Exception as e:
+        logger.warning(f"Gaps cache read error for '{team_key}': {e}")
+        return None
+
+
+def set_cached_gaps(team_key: str, gaps: list, game_date: Optional[str] = None) -> None:
+    """Write chronic gaps to cache."""
+    _ensure_cache_dir()
+    cache_file = CACHE_DIR / f"{_gaps_key(team_key, game_date)}.json"
+    try:
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(gaps, f, ensure_ascii=False, indent=2)
+        logger.info(f"Gaps cache SET for '{team_key}' date={game_date} → {cache_file} ({len(gaps)} gaps)")
+    except Exception as e:
+        logger.warning(f"Gaps cache write error for '{team_key}': {e}")
+

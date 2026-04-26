@@ -1,0 +1,38 @@
+[
+  {
+    "id": "gap_herm_01",
+    "location": "Flancul Drept Defensiv (al adversarului)",
+    "description": "Performanța inconstantă a fundașului lateral drept sau lipsa de acoperire din partea mijlocașului de bandă generează spații ample pe acest flanc. Adversarul se dezechilibrează aici, în special la tranziții rapide, permițând infiltrări și centrări periculoase. Problemele se accentuează dacă jucătorul semnalat pe acest post are o zi slabă, lăsând spații mari în spatele său și forțând fundașul central să iasă din poziție.",
+    "severity": "High",
+    "coordinates": {
+      "x": 70.0,
+      "y": 5.0,
+      "w": 20.0,
+      "h": 40.0
+    }
+  },
+  {
+    "id": "gap_herm_02",
+    "location": "Zona Mediană Defensivă (Spații între Linii)",
+    "description": "O problemă cronică a adversarului este lentoarea în reorganizarea defensivă după pierderea posesiei. Această vulnerabilitate este amplificată de performanțele fluctuante ale mijlocașilor defensivi, care adesea nu reușesc să se replieze suficient de rapid sau să acopere spațiile create. Rezultatul este un 'coridor' deschis pentru jucătorii noștri de creație și atacanți, permițând acțiuni directe spre poartă în zona centrală, în spatele liniei mediane și în fața apărătorilor centrali.",
+    "severity": "Critical",
+    "coordinates": {
+      "x": 55.0,
+      "y": 30.0,
+      "w": 30.0,
+      "h": 40.0
+    }
+  },
+  {
+    "id": "gap_herm_03",
+    "location": "Zona Centrală a Apărării (în jurul careului de 16m)",
+    "description": "La hermannstadt, există o dependență critică de performanța individuală a fundașilor centrali. Când aceștia nu sunt la nivel optim, apar lacune semnificative în duelurile aeriene (la centrări sau mingi lungi) și în situațiile de 1-vs-1 în interiorul careului. Această fragilitate poate fi exploatată prin mingi trimise în spatele apărării sau prin driblinguri directe, mai ales dacă unul dintre fundașii centrali are o zi mai slabă sau o acoperire deficitară din partea colegilor, lăsând spații pentru atacantul nostru principal.",
+    "severity": "High",
+    "coordinates": {
+      "x": 75.0,
+      "y": 35.0,
+      "w": 20.0,
+      "h": 30.0
+    }
+  }
+]

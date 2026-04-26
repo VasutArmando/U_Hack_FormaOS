@@ -1,5 +1,5 @@
 {
-   "checksum": "f8395dec3d1c1bac662de9868748bc0d",
+   "checksum": "1e54fbb25d92a354f7aeaf576726429e",
    "roots": {
       "bookmark_bar": {
          "children": [  ],
@@ -8,8 +8,7 @@
          "date_modified": "0",
          "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
          "id": "1",
-         "name": "Favorites bar",
-         "source": "unknown",
+         "name": "Bookmarks bar",
          "type": "folder"
       },
       "other": {
@@ -19,8 +18,7 @@
          "date_modified": "0",
          "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
          "id": "2",
-         "name": "Other favorites",
-         "source": "unknown",
+         "name": "Other bookmarks",
          "type": "folder"
       },
       "synced": {
@@ -30,22 +28,9 @@
          "date_modified": "0",
          "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
          "id": "3",
-         "name": "Mobile favorites",
-         "source": "unknown",
-         "type": "folder"
-      },
-      "workspaces_v2": {
-         "children": [  ],
-         "date_added": "13421629785505303",
-         "date_last_used": "0",
-         "date_modified": "0",
-         "guid": "75aa6670-344f-549d-b742-660f029506ab",
-         "id": "4",
-         "name": "Workspaces",
-         "source": "unknown",
+         "name": "Mobile bookmarks",
          "type": "folder"
       }
    },
-   "sync_metadata": "CkEKHgiIgQISCFtwRMidAQAAKg4QABgBIAAoBjAAOABAABIAKhhBbkJWd2tOYlgzekVyY1ViRmVUODFBPT1IA6AGDBKOAQgDEokBChxuamdEdTg4ZUNydlhwODZwRDdmSEdjcUZwODg9EiQ0ZWFlNTMzZi1lZDFiLTU1OWMtODk0Mi1mOWU5YjVlOGE4M2YYACAAKAAwk524osEwOK2guKLBMECtoLiiwTBKHHl6TkIwMWNuNTRBN2NSVTB1VCsvUGdtVHRVbz1aAGUAAAAAwj4CYAASjgEIBBKJAQocd1JCclpMKzZQQTlhdktnak5QN0pYRExjZnZzPRIkY2UwMGI5NzUtMjVhNi01MTRkLTgwZWItODAzMjZkZTQ3NTk1GAAgACgAMPrK2LrbMzi6zNi62zNAuszYutszShxubXg2NXNRRHZ4SThUZ0VlditBK250dG9TbjQ9WgBlAAAAAMI+AmAAEo4BCAESiQEKHHl4Si82ZnZrZWNyN2twNUVRekI0dFdMcGRiRT0SJGQ2N2VmOTk4LWU1MmYtNWFmNi1hZWRhLTJiMWQyMTFhMzRiNRgAIAAoADCTnbiiwTA4s564osEwQLOeuKLBMEocYVJDV0xnaEY5YjVJbnFLSUR2dUovanZRa0ZjPVoAZQAAAADCPgJgABKOAQgCEokBChxZY1NUb252RVNQd3FDczRMMmNyVmh2NjhMOTg9EiQxYjdkOWQzOS05MGRlLTVmN2EtYjcyYS00ZDA0ZDdhYzhmZjkYACAAKAAwk524osEwONKeuKLBMEDSnriiwTBKHG9QVmtod0JSYlY2NUtDV1IyK0lPTkhXb091OD1aAGUAAAAAwj4CYAAwADgA",
    "version": 1
 }
