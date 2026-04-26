@@ -1,0 +1,238 @@
+# Match-Day Weather + Player Nationality Climate Disadvantage Analysis
+
+## Overview
+
+Two new intelligent features layered on top of the already-working Opponent Weakness pipeline:
+
+1. **Match-Day Weather Forecast** — Use OpenWeatherMap's 5-day/3-hour forecast endpoint (`/forecast`) with the stadium's exact `lat`/`lng` (already in `stadiums.json`) to get the predicted conditions for the chosen **Game Date + Match Time** saved in Settings.
+2. **Nationality × Climate Disadvantage Analysis** — For every opponent player, read their `birthArea` from `players (1).json`, map it to a climate zone (tropical, cold, arid, etc.), compare it to the forecast conditions at the stadium, and let Gemini flag players who are likely at a physiological/psychological disadvantage.
+
+Both features feed into the **Opponent Weakness** player cards already displayed in the Pregame screen. A new filter chip **"Climate Disadvantage"** and a new weather banner will surface the data without changing the existing UI contract.
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **OpenWeather API key placement** — the key `f3d58e99dd52bd40e33fbf9d54a5ba54` must be added to `cloud_run/.env` as `OPENWEATHER_API_KEY`. It is currently missing (only `GOOGLE_API_KEY` is present).
+
+> [!NOTE]
+> **Forecast window** — OpenWeatherMap `/forecast` gives forecasts every 3 hours up to **5 days ahead**. If the match date is set more than 5 days away, we will fall back to **current weather** from `/weather` and note the limitation. No user action needed; handled automatically.
+
+> [!NOTE]
+> **Birth-area climate mapping** — We will use a **static country → Köppen climate zone** lookup table (~60 countries cover all players in the dataset). This avoids extra API calls and is fast. Gemini then interprets the mismatch between that zone and the match-day forecast.
+
+---
+
+## Proposed Changes
+
+---
+
+### Backend — Weather Engine
+
+#### [MODIFY] [weather_engine.py](file:///e:/U_Hack_FormaOS-1/cloud_run/services/weather_engine.py)
+
+- **Remove** the `get_city_for_stadium()` name-based hardcoded mapping — stadiums now have `lat`/`lng`.
+- **Add** `get_forecast_for_match(lat, lng, match_datetime)` — calls `/forecast` with `lat`/`lng`/`appid`/`units=metric`, finds the closest 3-hour slot to `match_datetime`, returns a `WeatherSnapshot` dict identical to what `get_live_weather()` returns today (so no downstream changes break).
+- **Keep** `get_live_weather()` as fallback when no date is set or forecast is out of range.
+- **Add** `OPENWEATHER_API_KEY` to `.env`.
+
+---
+
+### Backend — Climate Intelligence
+
+#### [NEW] [climate_engine.py](file:///e:/U_Hack_FormaOS-1/cloud_run/services/climate_engine.py)
+
+A new, focused module:
+
+```
+services/climate_engine.py
+```
+
+Responsibilities:
+- `COUNTRY_CLIMATE_MAP: Dict[str, str]` — static dict mapping country names (from `birthArea.name` in `players.json`) to a Köppen macro-zone:  
+  `"Tropical"`, `"Subtropical"`, `"Temperate"`, `"Cold/Continental"`, `"Arid"`, `"Nordic"`.
+- `get_player_climate_zone(birth_country: str) -> str` — lookup with fallback to `"Temperate"`.
+- `assess_climate_disadvantage(player_climate: str, match_weather: dict) -> dict` — pure Python pre-filter. Returns:
+  ```json
+  { "disadvantaged": true/false, "severity": "High|Medium|Low|None", "reason": "..." }
+  ```
+  Rules (no AI needed here, deterministic):
+  - Tropical player + temp < 10°C → High disadvantage
+  - Tropical player + rain/snow + temp < 15°C → High
+  - Nordic/Cold player + temp > 28°C → Medium
+  - Arid player + Rain → Medium  
+  - Same zone as Romania → None
+- `build_climate_context_for_prompt(players_with_climate: List[Dict]) -> str` — formats a compact string for the Gemini prompt, listing only the disadvantaged players.
+
+---
+
+### Backend — Data Manager
+
+#### [MODIFY] [data_manager.py](file:///e:/U_Hack_FormaOS-1/cloud_run/data_manager.py)
+
+- In `_parse_players_mapping()`, also cache `birthArea` per player ID:
+  ```python
+  self._players_birth_cache[pid] = p.get('birthArea', {}).get('name', 'Unknown')
+  ```
+- In `get_opponent_weaknesses()`, after injecting `name` and `player_role`, also inject `birth_country`:
+  ```python
+  p['birth_country'] = self._players_birth_cache.get(pid, 'Unknown')
+  ```
+- **New method** `get_match_weather(stadium_id, game_date_iso)` — reads `stadiums.json`, finds `lat`/`lng` for the stadium, calls `get_forecast_for_match()` or `get_live_weather()`, returns `WeatherSnapshot`.
+
+---
+
+### Backend — News Engine (Gemini Prompt)
+
+#### [MODIFY] [news_engine.py](file:///e:/U_Hack_FormaOS-1/cloud_run/services/news_engine.py)
+
+- Update `_slim_stats()` to include `birth_country` field (passed in from data manager).
+- Update `INTEL_PROMPT` template to add a new context section:
+  ```
+  CONDIȚII METEO LA MECI (data {match_date}, {stadium_city}):
+  {weather_json}
+  
+  CLIMAT DE ORIGINE (per jucător):
+  {climate_context}
+  ```
+  Gemini is instructed to incorporate climate disadvantage in `physical_state` and elevate `overall_weakness_score` for highly disadvantaged players.
+- Update `generate_pregame_intelligence_v2()` signature to accept `match_weather` and `climate_context` optional params.
+
+---
+
+### Backend — API Endpoint
+
+#### [MODIFY] [main.py](file:///e:/U_Hack_FormaOS-1/cloud_run/main.py)
+
+- In `pregame_opponent_weakness()`:
+  - Accept a new query param: `game_date` (ISO string, e.g. `2026-05-03T20:45:00`).
+  - Call `db_provider.get_match_weather(stadium_id, game_date)` to get the forecast.
+  - Pass weather + climate context into `get_opponent_weaknesses()` (or pass them separately to the news engine).
+- Weather data is already attached per-player in `physical_state` (via weather contamination logic) — this replaces that ad-hoc logic with a proper, structured enrichment.
+
+---
+
+### Backend — News Cache
+
+#### [MODIFY] [news_cache.py](file:///e:/U_Hack_FormaOS-1/cloud_run/services/news_cache.py)
+
+- Cache key must now include the game date so different match days produce fresh Gemini analysis (weather changes). New slug: `{team_slug}_{date_slug}`.
+- Add a `force_invalidate` helper so Settings screen can trigger re-analysis when the user changes the game date.
+
+---
+
+### Flutter — Models
+
+#### [MODIFY] [match_data.dart](file:///e:/U_Hack_FormaOS-1/flutter_app/lib/models/match_data.dart)
+
+- Extend `PlayerWeakness` with two new **nullable** fields:
+  ```dart
+  final String? climateDanger;      // "High", "Medium", "Low", "None"
+  final String? birthCountry;       // e.g. "Nigeria"
+  ```
+- Update `PlayerWeakness.fromJson()` to parse `climate_danger` and `birth_country`.
+
+---
+
+### Flutter — API Repository
+
+#### [MODIFY] [api_data_repository.dart](file:///e:/U_Hack_FormaOS-1/flutter_app/lib/repositories/api_data_repository.dart)
+
+- Update `getPregameOpponentWeakness()` to pass `game_date` as a query parameter (read from `SettingsService`).
+- Add `getMatchWeather(stadiumId, gameDate)` method → `GET /api/v1/pregame/match-weather` returning `MatchWeather` model.
+
+---
+
+### Flutter — New Models
+
+#### [MODIFY] [match_data.dart](file:///e:/U_Hack_FormaOS-1/flutter_app/lib/models/match_data.dart)
+
+- Add `MatchWeather` model:
+  ```dart
+  class MatchWeather {
+    final double temperature;
+    final String condition;
+    final int humidity;
+    final double windSpeed;
+    final String forecastNote; // "Forecast for match day" or "Fallback: current weather"
+  }
+  ```
+
+---
+
+### Flutter — Pregame Screen
+
+#### [MODIFY] [pregame_screen.dart](file:///e:/U_Hack_FormaOS-1/flutter_app/lib/screens/pregame_screen.dart)
+
+**Weather Banner** (new, top of Opponent Weakness tab):
+- A compact card showing the match-day forecast: 🌡️ temp, 🌧️ condition, 💨 wind, 💧 humidity.
+- Color-coded: green (clear), orange (rain), red (snow/storm).
+- Shows "Forecast for [date] at [stadium city]" or "Current conditions (match > 5 days away)".
+
+**New filter chip "Climate Risk":**
+- When active, shows only players where `climateDanger` is `"High"` or `"Medium"`.
+- Player card header shows a 🌍 flag icon + `birth_country` badge when disadvantage is detected.
+
+**Player card enhancement:**
+- If `climateDanger == "High"` → card border glow in orange/red.
+- If `climateDanger == "Medium"` → subtle yellow indicator.
+- New row below Physical: `"🌍 Climate: [birth_country] — [reason from Gemini]"` only if disadvantage > None.
+
+---
+
+### Flutter — Settings Screen
+
+#### [MODIFY] [settings_screen.dart](file:///e:/U_Hack_FormaOS-1/flutter_app/lib/screens/settings_screen.dart)
+
+- After saving, call the new `getMatchWeather()` endpoint with the chosen stadium + date.
+- Display a **live weather preview** widget below the Save button:
+  - Shows the predicted conditions for the match date/time/location.
+  - Uses a small animated icon (sun/rain/snow).
+  - Triggers cache invalidation so next Pregame load gets fresh Gemini analysis.
+
+---
+
+## Data Flow Diagram
+
+```mermaid
+flowchart TD
+    S[Settings Screen] -->|stadiumId + gameDate + matchTime| API1["/api/v1/pregame/match-weather"]
+    API1 --> WE[weather_engine.py\nget_forecast_for_match lat,lng,datetime]
+    WE -->|OWM /forecast| OWM[(OpenWeatherMap API)]
+    OWM --> WE
+    WE --> WeatherSnap[WeatherSnapshot dict]
+
+    API2["/api/v1/pregame/opponent-weakness?game_date=..."] --> DM[data_manager.py]
+    DM -->|players + birth_country| CE[climate_engine.py\nassess_climate_disadvantage]
+    CE -->|climate_context| NE[news_engine.py\ngenerate_pregame_intelligence_v2]
+    WeatherSnap --> NE
+    NE -->|Gemini prompt with weather+climate| GEM[(Gemini AI)]
+    GEM --> Players[List PlayerWeakness\n+ climate_danger field]
+    Players --> Flutter[Pregame Screen\nWeather Banner + Climate Risk filter]
+```
+
+---
+
+## Verification Plan
+
+### Automated (Backend)
+```bash
+# 1. Confirm forecast endpoint works with stadium coords
+python -c "from services.weather_engine import get_forecast_for_match; import datetime; print(get_forecast_for_match(46.7683, 23.5722, datetime.datetime.now() + datetime.timedelta(days=3)))"
+
+# 2. Confirm climate engine classifies correctly
+python -c "from services.climate_engine import assess_climate_disadvantage, get_player_climate_zone; z=get_player_climate_zone('Nigeria'); print(z); print(assess_climate_disadvantage(z, {'temperature': 5, 'condition': 'Rain', 'humidity': 90, 'wind_speed': 12}))"
+
+# 3. Hit the enriched endpoint
+curl "http://localhost:8000/api/v1/pregame/opponent-weakness?opponent_id=t6&stadium_id=s7&game_date=2026-05-03T20:45:00"
+```
+
+### Manual UI Verification
+1. In **Settings**, select FCS Bucureşti, Cluj Arena (s7), a date 3 days from now, 20:45.
+2. Verify **weather preview card** appears below Save with forecast data.
+3. Navigate to **Pregame → Opponent Weakness**.
+4. Verify the **Weather Banner** shows the forecast (not current conditions).
+5. Click **"Climate Risk"** filter — only non-Romanian players with tropical/nordic backgrounds should show.
+6. Expand a player card (e.g., M. Thiam from Senegal) — `🌍 Climate` row should appear with a High/Medium disadvantage note.
+7. Verify Romanian players have `climateDanger = "None"` and no climate row.

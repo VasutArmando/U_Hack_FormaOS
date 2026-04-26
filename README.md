@@ -1,92 +1,157 @@
-# FORMA SCOUT - Opponent Intelligence Platform
+# ⚽ Forma OS
 
-> **Câștigăm meciul înainte de fluierul de start**
+> **The ultimate AI-driven tactical operating system for modern football coaches.**
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white)
-![Flutter](https://img.shields.io/badge/Flutter-Web-02569B.svg?style=for-the-badge&logo=flutter&logoColor=white)
-![Google Cloud Platform](https://img.shields.io/badge/GCP-BigQuery%20%7C%20Cloud%20Run-4285F4.svg?style=for-the-badge&logo=googlecloud&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-Auth-FFCA28.svg?style=for-the-badge&logo=firebase&logoColor=black)
-
----
-
-## 👁️ Viziune & Problemă
-
-Analiza video tradițională (prin metode retrospective precum platforma Hudl standard) nu mai este suficientă în fotbalul modern. Aceasta ne arată *ce s-a întâmplat*, dar nu ne spune **când și cum se va repeta**. 
-
-**FORMA SCOUT** aduce o schimbare radicală de paradigmă: o platformă de inteligență predictivă concepută exclusiv pentru analiza meticuloasă a **adversarului**. Prin fuziunea datelor de tip eveniment și a tracking-ului 360°, sistemul descoperă tipare invizibile cu ochiul liber, vulnerabilități cronice și momentele exacte în care adversarul cedează sub presiune.
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](#)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=FastAPI&logoColor=white)](#)
+[![Flutter](https://img.shields.io/badge/Flutter-Web-02569B.svg?style=for-the-badge&logo=flutter&logoColor=white)](#)
+[![Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-8E75B2?style=for-the-badge&logo=googlebard&logoColor=white)](#)
 
 ---
 
-## 🏗️ Arhitectura: Unified Data Lake
-
-Platforma se bazează pe o arhitectură scalabilă de ingestie la nivel Enterprise (FAANG). Datele sunt centralizate și fuzionate într-un *Unified Data Lake* propulsat de **Google BigQuery**:
-
-- **Hudl (Proprietar Superliga):** Datele meciului tratate ca evenimente primare (pase, deposedări, dueluri).
-- **StatsBomb 360° (Open-Source):** Folosite pentru tracking-ul spațial avansat și calcularea automată a *Presingului Defensiv* pe baza proximității inamicilor în *freeze frames*.
-
-Acest strat de date solid ne permite să generăm modele ML, o "Hartă de Căldură a Erorilor" direct din SQL și rapoarte de detecție în timp real.
+## 📖 Table of Contents
+- [Vision & Problem](#-vision--problem)
+- [System Architecture](#-system-architecture)
+- [Core Modules & Features](#-core-modules--features)
+- [Tech Stack](#-tech-stack)
+- [Installation & Setup](#-installation--setup)
+- [Repository Structure](#-repository-structure)
+- [Context & Team](#-context--team)
 
 ---
 
-## 🧩 Modulele FORMA SCOUT
+## 👁️ Vision & Problem
 
-| Modul | Descriere Tehnologică & Tactică |
-| :--- | :--- |
-| **🔮 ORACLE** | **Pattern Recognition & Passing Networks**: Scanează rețelele de pase folosind `networkx` pentru a identifica *Playmaker-ul* advers. Folosește *K-Means Clustering* pentru a detecta Formațiile Dinamice și calculează Triggerul de Presing (linia unde adversarul devine agresiv). |
-| **📡 X-RAY** | **Vulnerability Mapping**: Analizează datele topografice pentru a găsi *Chronic Gaps* (spații lăsate libere) și zonele cu xT (Expected Threat) ridicat permise de adversar pe tranziția negativă. |
-| **🛡️ SHIELD** | **Opponent Weakness Profiling**: Urmărește datele pentru a profila *Veriga Slabă* a adversarului - jucătorul cu cel mai mare risc de eroare analizând oboseala și cedările tehnice sub presiune. |
-| **🧠 TACTICIAN**| **The Master Strategist**: Propulsat de *Gemini 2.0 Flash* într-o arhitectură Multi-Agent. Preia toate agregatele și generează "The Winning Game Plan", prezentat sub forma unor *Scouting Cards* pentru domnul antrenor Sabău. |
+Traditional video analysis shows us *what happened*, but it struggles to predict **when and how it will repeat**. 
+
+**Forma OS** brings a radical paradigm shift: an elite, AI-driven predictive intelligence platform designed exclusively for meticulous **opponent analysis**. By fusing real-time open-source intelligence (OSINT), historical match statistics, and advanced climate profiling, Forma OS uncovers hidden patterns, chronic vulnerabilities, and the exact moments an opponent will crack under pressure.
+
+---
+
+## ⚙️ System Architecture
+
+Forma OS operates as a highly automated intelligence pipeline that triggers as soon as the coaching staff begins their preparation. Below is the data flow:
+
+```mermaid
+graph TD
+    %% Define Styles
+    classDef frontend fill:#02569B,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef backend fill:#009688,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef ai fill:#8E75B2,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef external fill:#F2994A,stroke:#fff,stroke-width:2px,color:#fff;
+
+    %% Nodes
+    UI[📱 Flutter Web/Mobile]:::frontend
+    API(⚙️ FastAPI Backend):::backend
+    DB[(💾 Local JSON & SQLite DB)]:::backend
+    News[📰 Web Scraping News <br/> GSP.ro / Prosport]:::external
+    Weather[🌤️ OpenWeatherMap API]:::external
+    Gemini[🧠 Gemini 2.5 Flash API]:::ai
+
+    %% Flow
+    UI -->|1. Setup Match| API
+    API -->|2a. Fetch Historical Stats| DB
+    API -->|2b. Scrape Latest News| News
+    API -->|2c. Fetch Match Forecast| Weather
+    
+    DB -.->|Stats| API
+    News -.->|Article Sentiment| API
+    Weather -.->|Climate Conditions| API
+    
+    API -->|3. Compile Context| Gemini
+    Gemini -->|4. Analyze Vulnerabilities| API
+    API -->|5. Deliver Tactical UI Cards| UI
+```
+
+1. **Trigger Phase:** The coach selects an upcoming opponent, stadium, and match date/time in the **Match Setup** screen.
+2. **Context Gathering:** The backend reaches out to the **OpenWeatherMap API** for the match forecast, **scrapes the latest sports news** (via `BeautifulSoup` on GSP.ro/Prosport.ro) to capture team morale and injuries, and pulls historical match stats from the local cache.
+3. **AI Synthesis:** This rich context is fed to the **Gemini 2.5 Flash API**, which evaluates structural team flaws and individual vulnerabilities.
+4. **Tactical Deployment:** Insights are seamlessly delivered to the Flutter frontend, mapping weaknesses and preparing the **Omniscient AI Assistant**.
+
+---
+
+## 🧩 Core Modules & Features
+
+Forma OS is divided into three primary tactical modules, reflecting the workflow of a modern coaching staff:
+
+### 1. Match Setup
+The foundation of the tactical plan. Configure the upcoming opponent, the stadium, and the match date/time. 
+- **Automated Intelligence:** Saving the setup automatically fetches live weather forecasts and triggers the background AI pipeline to aggressively scrape and analyze the opponent.
+
+### 2. Intelligence Hub (Pregame)
+The ultimate pregame scouting tool, divided into actionable intelligence:
+- **📰 News Scraping & Sentiment:** Actively scrapes major Romanian sports outlets (GSP.ro, Prosport.ro) to gauge player morale, injury updates, and public pressure before the match.
+- **⚡ Chronic Gaps:** Gemini-powered detection of team-level tactical vulnerabilities (e.g., exposed flanks, slow defensive transitions). These gaps are dynamically mapped with spatial coordinates onto an interactive Flutter tactical pitch.
+- **🛡️ Opponent Weakness Profiling:** Individual player scouting reports generated by combining historical stats, scraped news sentiment, and our unique **Climate Risk Engine**. The engine assesses fatigue and vulnerability by comparing a player's birth country climate against the forecasted match-day weather.
+
+### 3. Tactical Board (In-game & Halftime)
+Real-time adjustments to win the match while it's happening:
+- **📊 Live Monitoring:** Real-time player fatigue tracking (simulated biometrics) and live tactical gap detection.
+- **🔄 Halftime Adjustments:** Predictive halftime substitution suggestions based on the flow of the game.
+- **🤖 Omniscient AI Assistant:** A conversational AI agent with full RAG (Retrieval-Augmented Generation) context of the weather, player stats, scraped news, and live fatigue. Ask it anything, and it will respond with precise tactical advice.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Tehnologie | Utilizare în FORMA SCOUT |
-| :--- | :--- |
-| **FastAPI** | Backend de înaltă performanță, expune endpoint-urile analitice și rute de AI. |
-| **BigQuery / SQL** | Stocare Unified Data Lake și agregări complexe de densitate a erorilor. |
-| **Scikit-Learn & NetworkX** | Algoritmi de Clustering (K-Means) și Teoria Grafurilor pentru pase. |
-| **Gemini 2.0 Flash** | Motorul de sinteză tactică ce generează deciziile finale NLP din date brute. |
-| **Flutter Web** | Dashboard interactiv, performant, pregătit pentru tablete (*Opponent Intel Card*). |
+| Layer | Technologies | Description |
+| :--- | :--- | :--- |
+| **Frontend** | Flutter Web/Mobile | Premium, glassmorphism-based dark theme UI designed for interactive dashboarding. |
+| **Backend** | Python, FastAPI, SQLite | High-performance backend using local JSON datasets (`Date - meciuri`) for speed. |
+| **AI / LLM** | Google Gemini API | `gemini-2.5-flash` for NLP synthesis, intelligence extraction, and the tactical assistant. |
+| **Data Gathering** | BeautifulSoup, OpenWeatherMap | Real-time web scraping of sports media and live match-day weather integration. |
 
 ---
 
-## 🚀 Instalare & Rulare
+## 🚀 Installation & Setup
 
 ### 1. Backend (Python + FastAPI)
-1. Instalați dependențele din folderul de cloud:
+The core backend runs out of the `cloud_run` directory.
+
+1. Navigate to the backend directory and install dependencies:
    ```bash
    cd cloud_run
    pip install -r requirements.txt
    ```
-2. Porniți serverul folosind Uvicorn:
+2. Set up your environment variables. Ensure your `.env` file contains:
+   ```env
+   GOOGLE_API_KEY=your_gemini_key_here
+   OPENWEATHER_API_KEY=your_weather_key_here
+   ```
+3. Start the server using Uvicorn:
    ```bash
    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
 ### 2. Frontend (Flutter)
-1. Asigurați-vă că aveți Flutter SDK instalat și canalul configurat pe web/desktop.
-2. Descărcați și compilați pachetele:
+The UI is located in the `flutter_app` directory.
+
+1. Ensure you have the Flutter SDK installed and configured for web/desktop.
+2. Download and compile the packages:
    ```bash
    cd flutter_app
    flutter pub get
    ```
-3. Porniți aplicația web:
+3. Run the web application:
    ```bash
    flutter run -d chrome
    ```
 
 ---
 
-## 🎓 Context Hackathon
+## 🧹 Repository Structure
+
+The core architecture relies strictly on two directories:
+- `/cloud_run`: The Python FastAPI backend.
+- `/flutter_app`: The Flutter frontend.
+
+> **Cleanup Notice:** Legacy folders from previous iterations (e.g., `terraform`, `dataflow`, `data_pipeline`, `data_factory`, `edge_ml`, and files like `firestore.rules`) are deprecated and should be safely deleted to maintain a clean repository.
+
+---
+
+## 🎓 Context & Team
 
 Acest proiect a fost dezvoltat cu pasiune și dedicare în cadrul evenimentului oficial:
 **"U" Hack! Code in Black & White** (24-26 Aprilie 2026, Cluj-Napoca).
-
-**Membrii Echipei:**
-- **Product Manager / Tactic Analyst:** [Nume Membru]
-- **Lead AI & Data Engineer:** [Nume Membru]
-- **Frontend / Flutter Architect:** [Nume Membru]
-- **Backend / Cloud Engineer:** [Nume Membru]
 
 *Suntem U. Dincolo de linii.* ⚽🤍🖤
