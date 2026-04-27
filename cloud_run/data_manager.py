@@ -550,13 +550,47 @@ class LocalFilesProvider(DataProvider, Observer):
                     f"{len(players_list)} total players, "
                     f"{len(player_names)} named."
                 )
-                scraped_news = get_or_fetch(
-                    opponent_name,
-                    scrape_opponent_news,
-                    opponent_name,
-                    player_names,
-                    game_date=game_date,
-                )
+
+                # Check if a valid cache exists (has actual player articles, not just RSS headlines)
+                from services.news_cache import get_cached_news, set_cached_news
+                cached_news = get_cached_news(opponent_name, game_date=game_date)
+                
+                # Determine if cache is usable: needs real player articles with body text
+                cache_is_usable = False
+                if cached_news:
+                    player_articles = cached_news.get("player_articles", {})
+                    total_with_body = sum(
+                        1 for articles in player_articles.values()
+                        for a in articles if len(a.get("body", "")) > 100
+                    )
+                    sources = cached_news.get("sources_used", [])
+                    # Only trust cache if it came from a full scrape (gsp/prosport), not just RSS headlines
+                    has_real_source = "gsp.ro" in sources or "prosport.ro" in sources
+                    cache_is_usable = has_real_source and total_with_body > 0
+                    if not cache_is_usable:
+                        logger.info(f"Cache for '{opponent_name}' exists but has no real player articles (sources={sources}, bodies={total_with_body}). Re-scraping fresh.")
+
+                if cache_is_usable:
+                    scraped_news = cached_news
+                    logger.info(f"Using valid cache for '{opponent_name}' with player articles.")
+                else:
+                    # Fresh scrape — always fetch full bodies
+                    logger.info(f"Fetching fresh news for '{opponent_name}' with {len(player_names)} players...")
+                    scraped_news = scrape_opponent_news(
+                        opponent_name,
+                        player_names,
+                        fetch_full_bodies=True,
+                    )
+                    if scraped_news:
+                        set_cached_news(opponent_name, scraped_news, game_date=game_date)
+                        total_player_arts = sum(len(v) for v in scraped_news.get("player_articles", {}).values())
+                        logger.info(
+                            f"Scrape complete for '{opponent_name}': "
+                            f"{len(scraped_news.get('team_articles', []))} team articles, "
+                            f"{total_player_arts} player articles across "
+                            f"{len(scraped_news.get('player_articles', {}))} players."
+                        )
+
                 return generate_pregame_intelligence_v2(
                     players_list, opponent_name, scraped_news,
                     match_weather=match_weather,

@@ -24,6 +24,13 @@ except ImportError:
     BS4_AVAILABLE = False
 
 logger = logging.getLogger("forma_os_scraper")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - [SCRAPER] %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 # ---------------------------------------------------------------------------
 # Configuration

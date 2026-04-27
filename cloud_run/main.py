@@ -217,7 +217,7 @@ async def prepare_match(payload: PrepareMatchRequest) -> Dict[str, Any]:
     Flutter polls GET /api/v1/settings/prepare-match/status for progress.
     """
     import threading
-    from services.news_cache import get_cached_profiles
+    from services.news_cache import get_cached_profiles, get_cached_news, invalidate_all_for_team
 
     # Resolve team name
     opponent_name = "Adversar"
@@ -227,12 +227,25 @@ async def prepare_match(payload: PrepareMatchRequest) -> Dict[str, Any]:
         "Adversar",
     )
 
-    # Check cache first
+    # Check if profiles cache exists AND is trustworthy (has real news-backed analysis)
     cached = get_cached_profiles(opponent_name, game_date=payload.game_date)
     if cached is not None:
-        global _prepare_state
-        _prepare_state = {"status": "done", "player_count": len(cached), "error": None, "opponent": opponent_name}
-        return {"status": "done", "message": f"Cached AI analysis loaded for '{opponent_name}'"}
+        # Check if the profiles are "empty" — built without real scraping
+        no_news_count = sum(
+            1 for p in cached
+            if "Nu există informații din presă disponibile" in p.get("physical_state", "")
+            or "Analiză bazată exclusiv pe statistici" in p.get("exploit_recommendation", "")
+        )
+        is_stale = no_news_count > len(cached) * 0.5  # >50% players have no news = stale
+
+        if not is_stale:
+            global _prepare_state
+            _prepare_state = {"status": "done", "player_count": len(cached), "error": None, "opponent": opponent_name}
+            return {"status": "done", "message": f"Cached AI analysis loaded for '{opponent_name}'"}
+        else:
+            # Invalidate the stale profiles cache so data_manager re-runs Gemini with fresh news
+            logger.info(f"prepare-match: Profiles for '{opponent_name}' are stale ({no_news_count}/{len(cached)} without news). Invalidating and re-running pipeline.")
+            invalidate_all_for_team(opponent_name)
 
     # Start background thread
     thread = threading.Thread(

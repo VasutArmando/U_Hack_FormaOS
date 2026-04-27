@@ -1,14 +1,38 @@
 [
   {
-    "id": "gap_offline_1",
-    "location": "Flancul Stâng / Half Space",
-    "description": "Date istorice arată o vulnerabilitate cronică pe flancul stâng pentru Adversar.",
+    "id": "ADVERSAR-GAP-FLANC-DREPT",
+    "location": "Flancul Drept Defensiv al Adversarului",
+    "description": "Se observă o tendință a adversarului de a lăsa spații semnificative pe flancul lor drept (din perspectiva lor), în special atunci când fundașul lateral se avântă în atac sau când aripa nu reușește să facă faza defensivă la timp. Aceasta creează o autostradă pentru pătrunderile rapide și centrările din partea stângă a atacului U Cluj, exploatând dezechilibrul numeric sau pozițional. Vulnerabilitatea este accentuată în tranzițiile rapide ale U Cluj, unde adversarul nu se reorganizează suficient de rapid pe acea parte. Potențial pentru 2-vs-1 sau 3-vs-2 în favoarea noastră.",
     "severity": "High",
     "coordinates": {
-      "x": 20.0,
-      "y": 20.0,
+      "x": 70.0,
+      "y": 30.0,
+      "w": 25.0,
+      "h": 40.0
+    }
+  },
+  {
+    "id": "ADVERSAR-GAP-INTRE-LINII",
+    "location": "Zona Centrală între Linii (Fundași-Mijlocași)",
+    "description": "Există o tendință cronică a adversarului de a menține o distanță prea mare între linia de fundași centrali și mijlocașii defensivi. Acest 'buzunar' central, situat imediat în fața apărării, permite jucătorilor noștri ofensivi (mijlocași de creație, atacanți falși sau atacanți care se retrag) să primească mingea în poziții periculoase, cu fața la poartă și spațiu de manevră. Lipsa de compactitate verticală facilitează jocul combinativ scurt și pătrunderile pe centru, oferind oportunități clare de șut de la distanță sau pase decisive către atacanți.",
+    "severity": "High",
+    "coordinates": {
+      "x": 60.0,
+      "y": 45.0,
+      "w": 20.0,
+      "h": 15.0
+    }
+  },
+  {
+    "id": "ADVERSAR-GAP-TRANZITIE-NEGATIVA",
+    "location": "Mijlocul Defensiv Central al Adversarului",
+    "description": "Adversarul prezintă o vulnerabilitate sistemică în tranziția negativă, în special în zona mijlocului defensiv central. După pierderea posesiei, mijlocașii lor defensivi sunt adesea lenți în a-și reocupa pozițiile sau în a exercita presiune imediată pe purtătorul de balon al U Cluj. Acest lucru permite echipei noastre să lanseze contraatacuri rapide prin centru, exploatând spațiile libere și dezorganizarea temporară a adversarului. Capacitatea de a juca vertical rapid, cu pase decisive în această zonă, va fi crucială pentru a crea superioritate numerică și a ajunge la poartă înainte ca adversarul să se poată regrupa.",
+    "severity": "Medium",
+    "coordinates": {
+      "x": 55.0,
+      "y": 40.0,
       "w": 30.0,
-      "h": 60.0
+      "h": 20.0
     }
   }
 ]
